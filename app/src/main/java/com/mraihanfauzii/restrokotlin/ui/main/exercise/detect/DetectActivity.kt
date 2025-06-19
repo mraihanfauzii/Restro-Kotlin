@@ -1,4 +1,4 @@
-package com.mraihanfauzii.restrokotlin
+package com.mraihanfauzii.restrokotlin.ui.main.exercise.detect
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
@@ -17,6 +17,9 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.google.mediapipe.tasks.components.containers.Landmark
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.core.RunningMode
+import com.mraihanfauzii.restrokotlin.ExercisePerformance
+import com.mraihanfauzii.restrokotlin.PoseLandmarkerHelper
+import com.mraihanfauzii.restrokotlin.R
 import com.mraihanfauzii.restrokotlin.databinding.ActivityDetectBinding
 import org.tensorflow.lite.Interpreter
 import java.nio.channels.FileChannel

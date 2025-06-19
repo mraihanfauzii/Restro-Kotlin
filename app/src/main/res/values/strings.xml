@@ -40,4 +40,35 @@
         <item>Pose Landmarker Lite</item>
         <item>Pose Landmarker Heavy</item>
     </string-array>
+
+    <string name="title_menu_1">Transaksi Dengan Mudah dan Cepat</string>
+    <string name="title_menu_2">Arsitek Bersertifikasi</string>
+    <string name="title_menu_3">Kemudahan Penggunaan Aplikasi</string>
+    <string name="title_menu_4">Platform Integrasi Konstruksi No 1 di Indonesia</string>
+    <string name="desc_menu_1">Ceritakan momen yang anda lalui hari ini kepada 1 juta pengguna yang tersebar di seluruh Indonesia.</string>
+    <string name="desc_menu_2">Tidak baik untuk memendam apa yang kamu rasakan, silahkan tumpahkan perasaan anda pada story yang anda buat.</string>
+    <string name="desc_menu_3">Dengan begitu anda dapat berbagi ilmu kepada sesama pengguna.</string>
+    <string name="desc_menu_4">Dengan membaca curhatan pengguna dapat mengisi waktu luang-mu.</string>
+    <string name="learn_now">Coba Sekarang</string>
+
+    <string name="empty_name">Nama Tidak Boleh Kosong!</string>
+    <string name="empty_email">Email Tidak Boleh Kosong!</string>
+    <string name="empty_password">Kata Sandi Tidak Boleh Kosong!</string>
+    <string name="empty_passconf">Kata Sandi Konfirmasi Tidak Boleh Kosong!</string>
+    <string name="invalid_email">Format Email Salah!</string>
+    <string name="invalid_password">Password tidak boleh kurang dari 8 karakter!</string>
+
+    <string name="home">Home</string>
+    <string name="profile">Profile</string>
+    <string name="calendar">Calendar</string>
+    <string name="detect">Detect</string>
+    <string name="food">Food</string>
+
+    <string name="light_theme">Light Theme</string>
+    <string name="dark_theme">Dark Theme</string>
+    <string name="theme">theme</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="light_mode">Light Mode</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

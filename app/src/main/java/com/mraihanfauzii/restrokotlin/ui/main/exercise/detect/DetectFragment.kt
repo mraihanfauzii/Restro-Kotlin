@@ -1,9 +1,13 @@
-package com.mraihanfauzii.restrokotlin
+package com.mraihanfauzii.restrokotlin.ui.main.exercise.detect
 
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
+import androidx.fragment.app.Fragment
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -14,31 +18,38 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.mraihanfauzii.restrokotlin.R
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class MainActivity : AppCompatActivity() {
+class DetectFragment : Fragment() {
 
     private lateinit var actions: List<String>
     private val plannedExercises = mutableListOf<MutableMap<String, Any>>() // {actionName: String, targetReps: Int, (optional) gerakanId: Int}
     private var maxDurationPerRep: Int = 20 // Default value
     private lateinit var exercisesContainer: LinearLayout // Container for dynamically added exercise views
+    private lateinit var rootView: View // Menyimpan referensi ke root view fragment
 
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
         private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
-        private const val TAG = "DebugActivity"
+        private const val TAG = "DetectFragment" // Ubah TAG
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main) // Use the new debug layout
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        rootView = inflater.inflate(R.layout.fragment_detect, container, false)
+        return rootView
+    }
 
-        exercisesContainer = findViewById(R.id.exercisesContainer)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        exercisesContainer = view.findViewById(R.id.exercisesContainer)
 
         loadActions()
         setupMaxDurationSlider()
@@ -51,36 +62,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Loads the list of exercise actions from `assets/actions.txt`.
-     */
     private fun loadActions() {
         try {
-            assets.open("actions.txt").use { inputStream ->
+            // Gunakan requireContext().assets
+            requireContext().assets.open("actions.txt").use { inputStream ->
                 BufferedReader(InputStreamReader(inputStream)).use { reader ->
                     actions = reader.readLines().map { it.trim() }.filter { it.isNotEmpty() }
                 }
             }
             Log.d(TAG, "Actions loaded: $actions")
         } catch (e: Exception) {
-            Toast.makeText(this, "Error loading actions.txt: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "Error loading actions.txt: ${e.message}", Toast.LENGTH_LONG).show()
             Log.e(TAG, "Error loading actions.txt", e)
-            actions = emptyList() // Ensure actions is not null
+            actions = emptyList()
         }
     }
 
-    /**
-     * Sets up the slider for maximum duration per repetition.
-     */
     private fun setupMaxDurationSlider() {
-        val maxDurationTv: TextView = findViewById(R.id.maxDurationValue)
+        // Gunakan rootView.findViewById
+        val maxDurationTv: TextView = rootView.findViewById(R.id.maxDurationValue)
         maxDurationTv.text = "Durasi Maksimal per Repetisi (detik): $maxDurationPerRep"
 
-        val maxDurationSlider: SeekBar = findViewById(R.id.maxDurationSlider)
+        val maxDurationSlider: SeekBar = rootView.findViewById(R.id.maxDurationSlider)
         maxDurationSlider.progress = maxDurationPerRep
         maxDurationSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                // Ensure progress stays within 5-60 seconds range
                 maxDurationPerRep = progress.coerceIn(5, 60)
                 maxDurationTv.text = "Durasi Maksimal per Repetisi (detik): $maxDurationPerRep"
             }
@@ -89,33 +95,28 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
-    /**
-     * Sets up the spinner for selecting and adding exercises.
-     */
     private fun setupAddExerciseSpinner() {
-        val spinner: Spinner = findViewById(R.id.actionSpinner)
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, actions)
+        // Gunakan rootView.findViewById dan requireContext()
+        val spinner: Spinner = rootView.findViewById(R.id.actionSpinner)
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, actions)
         spinner.adapter = adapter
 
-        findViewById<Button>(R.id.addExerciseButton).setOnClickListener {
-            // Ensure actions list is not empty before accessing selectedItem
+        rootView.findViewById<Button>(R.id.addExerciseButton).setOnClickListener {
             if (actions.isNotEmpty()) {
                 val selectedAction = spinner.selectedItem as String
                 showAddExerciseDialog(selectedAction)
             } else {
-                Toast.makeText(this, "Tidak ada gerakan yang dimuat.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Tidak ada gerakan yang dimuat.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    /**
-     * Shows a dialog to input the number of repetitions for a selected exercise.
-     */
     private fun showAddExerciseDialog(actionName: String) {
-        val builder = AlertDialog.Builder(this)
+        // Gunakan requireContext()
+        val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Tambahkan $actionName")
 
-        val input = EditText(this)
+        val input = EditText(requireContext())
         input.hint = "Jumlah repetisi"
         input.inputType = android.text.InputType.TYPE_CLASS_NUMBER
         builder.setView(input)
@@ -128,10 +129,10 @@ class MainActivity : AppCompatActivity() {
                     plannedExercises.add(mutableMapOf("actionName" to actionName, "targetReps" to reps))
                     updatePlannedExercisesUI()
                 } else {
-                    Toast.makeText(this, "Repetisi harus lebih dari 0", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Repetisi harus lebih dari 0", Toast.LENGTH_SHORT).show()
                 }
             } else {
-                Toast.makeText(this, "Jumlah repetisi tidak boleh kosong", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Jumlah repetisi tidak boleh kosong", Toast.LENGTH_SHORT).show()
             }
             dialog.dismiss()
         }
@@ -141,29 +142,26 @@ class MainActivity : AppCompatActivity() {
         builder.show()
     }
 
-    /**
-     * Dynamically updates the UI to display the list of planned exercises.
-     */
     private fun updatePlannedExercisesUI() {
-        exercisesContainer.removeAllViews() // Clear existing views
+        exercisesContainer.removeAllViews()
 
         if (plannedExercises.isEmpty()) {
-            val textView = TextView(this)
+            val textView = TextView(requireContext())
             textView.text = "Belum ada latihan yang dipilih."
             textView.textSize = 16f
             exercisesContainer.addView(textView)
-            findViewById<Button>(R.id.startButton).isEnabled = false
+            rootView.findViewById<Button>(R.id.startButton).isEnabled = false
             return
         }
 
-        findViewById<Button>(R.id.startButton).isEnabled = true
+        rootView.findViewById<Button>(R.id.startButton).isEnabled = true
 
         plannedExercises.forEachIndexed { index, exercise ->
-            // Inflate the custom item layout for each exercise
+            // Gunakan requireContext() untuk layoutInflater
             val exerciseView = layoutInflater.inflate(R.layout.item_planned_exercise, exercisesContainer, false) as CardView
             val actionNameTv: TextView = exerciseView.findViewById(R.id.actionNameTv)
             val repsTv: TextView = exerciseView.findViewById(R.id.repsTv)
-            val removeBtn: ImageButton = exerciseView.findViewById(R.id.removeBtn) // Changed to ImageButton
+            val removeBtn: ImageButton = exerciseView.findViewById(R.id.removeBtn)
             val addRepsBtn: Button = exerciseView.findViewById(R.id.addRepsBtn)
             val minusRepsBtn: Button = exerciseView.findViewById(R.id.minusRepsBtn)
 
@@ -187,13 +185,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             removeBtn.setOnClickListener {
-                // Use a dialog to confirm removal
-                AlertDialog.Builder(this)
+                // Gunakan requireContext()
+                AlertDialog.Builder(requireContext())
                     .setTitle("Hapus Latihan?")
                     .setMessage("Anda yakin ingin menghapus '${exercise["actionName"]}' dari daftar?")
                     .setPositiveButton("Hapus") { dialog, _ ->
                         plannedExercises.removeAt(index)
-                        updatePlannedExercisesUI() // Rebuild UI after removal
+                        updatePlannedExercisesUI()
                         dialog.dismiss()
                     }
                     .setNegativeButton("Batal") { dialog, _ ->
@@ -205,11 +203,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Sets up the start button to navigate to the DetectActivity.
-     */
     private fun setupStartButton() {
-        findViewById<Button>(R.id.startButton).setOnClickListener {
+        // Gunakan rootView.findViewById
+        rootView.findViewById<Button>(R.id.startButton).setOnClickListener {
             if (plannedExercises.isNotEmpty()) {
                 if (allPermissionsGranted()) {
                     startDetectActivity()
@@ -217,29 +213,22 @@ class MainActivity : AppCompatActivity() {
                     requestPermissions()
                 }
             } else {
-                Toast.makeText(this, "Pilih setidaknya satu latihan!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Pilih setidaknya satu latihan!", Toast.LENGTH_SHORT).show()
             }
         }
-        findViewById<Button>(R.id.startButton).isEnabled = false // Disable initially
+        rootView.findViewById<Button>(R.id.startButton).isEnabled = false
     }
 
-    /**
-     * Checks if all required permissions are granted.
-     */
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
+        // Gunakan requireContext()
+        ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * Requests necessary permissions from the user.
-     */
     private fun requestPermissions() {
-        ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, REQUEST_CAMERA_PERMISSION)
+        // Panggil requestPermissions dari Fragment
+        requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CAMERA_PERMISSION)
     }
 
-    /**
-     * Handles the result of permission requests.
-     */
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<String>,
@@ -248,30 +237,22 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
             if (allPermissionsGranted()) {
-                Toast.makeText(this, "Izin kamera diberikan", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Izin kamera diberikan", Toast.LENGTH_SHORT).show()
                 startDetectActivity()
             } else {
-                Toast.makeText(this, "Izin kamera ditolak", Toast.LENGTH_SHORT).show()
-                // Optionally disable start button or show message to enable permissions
+                Toast.makeText(requireContext(), "Izin kamera ditolak", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
-    /**
-     * Starts the DetectActivity, passing the planned exercises and max duration.
-     */
     private fun startDetectActivity() {
-        val intent = Intent(this, DetectActivity::class.java).apply {
-            // Convert plannedExercises to ArrayList of Bundles for Parcelable transfer
+        // Gunakan requireContext() untuk Intent
+        val intent = Intent(requireContext(), DetectActivity::class.java).apply {
             val exercisesBundleList = ArrayList<Bundle>()
             plannedExercises.forEach { exercise ->
                 val bundle = Bundle()
                 bundle.putString("actionName", exercise["actionName"] as String)
                 bundle.putInt("targetReps", exercise["targetReps"] as Int)
-                // If you have 'gerakanId' add it here too
-                // if (exercise.containsKey("gerakanId")) {
-                //     bundle.putInt("gerakanId", exercise["gerakanId"] as Int)
-                // }
                 exercisesBundleList.add(bundle)
             }
             putParcelableArrayListExtra("plannedExercises", exercisesBundleList)

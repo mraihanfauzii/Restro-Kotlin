@@ -1,8 +1,7 @@
 package com.mraihanfauzii.restrokotlin.model
 
-data class ApiResponse<T>(
+data class DeleteResponse(
     val success: Boolean,
     val message: String,
-    val code: Int,
-    val data: T
+    val code: Int
 )
