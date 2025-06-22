@@ -38,7 +38,7 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
     /* ───── Hyper-parameter model ───── */
     private val seqLen   = 60
     private val numFeat  = 33 * 2            // 33 landmark × (x,y)
-    private val needConf = 0.80f             // ambang “Sempurna”
+    private val needConf = 0.60f             // ambang “Sempurna”
     private val holdSec  = 2.0               // tahan 2 d
     private val prepSec  = 5                 // hitung-mundur 3 d
     private val TH_VIS = 0.35f

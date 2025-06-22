@@ -24,7 +24,7 @@ import com.mraihanfauzii.restrokotlin.R
 import java.io.BufferedReader
 import java.io.InputStreamReader
 
-class DetectFragment : Fragment() {
+class DebugFragment : Fragment() {
 
     private lateinit var actions: List<String>
     private val plannedExercises = mutableListOf<MutableMap<String, Any>>() // {actionName: String, targetReps: Int, (optional) gerakanId: Int}
@@ -35,14 +35,14 @@ class DetectFragment : Fragment() {
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
         private val REQUIRED_PERMISSIONS = arrayOf(android.Manifest.permission.CAMERA)
-        private const val TAG = "DetectFragment" // Ubah TAG
+        private const val TAG = "DebugFragment"
     }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        rootView = inflater.inflate(R.layout.fragment_detect, container, false)
+        rootView = inflater.inflate(R.layout.fragment_debug, container, false)
         return rootView
     }
 

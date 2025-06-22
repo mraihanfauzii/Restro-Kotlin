@@ -9,17 +9,25 @@
         android:id="@+id/homeFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.home.HomeFragment"
         android:label="fragment_home"
-        tools:layout="@layout/fragment_home" />
+        tools:layout="@layout/fragment_home" >
+        <action
+            android:id="@+id/action_homeFragment_to_debugFragment"
+            app:destination="@id/debugFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
     <fragment
         android:id="@+id/calendarFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.calendar.CalendarFragment"
         android:label="fragment_discover"
         tools:layout="@layout/fragment_calendar" />
     <fragment
-        android:id="@+id/detectFragment"
-        android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.DetectFragment"
+        android:id="@+id/chatFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.ChatFragment"
         android:label="fragment_construction"
-        tools:layout="@layout/fragment_detect" />
+        tools:layout="@layout/fragment_chat" />
     <fragment
         android:id="@+id/foodFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.food.FoodFragment"
@@ -29,6 +37,47 @@
         android:id="@+id/profileFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.ProfileFragment"
         android:label="fragment_profile"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile">
+
+    <action
+        android:id="@+id/action_profileFragment_to_accountInfoFragment"
+        app:destination="@id/accountInfoFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left"
+        app:popEnterAnim="@anim/slide_in_left"
+        app:popExitAnim="@anim/slide_out_right" />
+    <action
+        android:id="@+id/action_profileFragment_to_patientInfoFragment"
+        app:destination="@id/patientInfoFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left"
+        app:popEnterAnim="@anim/slide_in_left"
+        app:popExitAnim="@anim/slide_out_right" />
+    <action
+        android:id="@+id/action_profileFragment_to_healthInfoFragment"
+        app:destination="@id/healthInfoFragment"
+        app:enterAnim="@anim/slide_in_right"
+        app:exitAnim="@anim/slide_out_left"
+        app:popEnterAnim="@anim/slide_in_left"
+        app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/accountInfoFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.AccountInfoFragment"
+        android:label="Informasi Akun" tools:layout="@layout/fragment_account_info" />
+    <fragment
+        android:id="@+id/patientInfoFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.PatientInfoFragment"
+        android:label="Informasi Pasien" tools:layout="@layout/fragment_patient_info" />
+    <fragment
+        android:id="@+id/healthInfoFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.HealthInfoFragment"
+        android:label="Informasi Kesehatan" tools:layout="@layout/fragment_health_info" />
+    <fragment
+        android:id="@+id/debugFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.DebugFragment"
+        android:label="Debug Mode"
+        tools:layout="@layout/fragment_debug" />
 
 </navigation>

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "923846485510",
+    "project_id": "restro-62e50",
+    "storage_bucket": "restro-62e50.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:923846485510:android:e4617a1a2fd9b57d38c587",
+        "android_client_info": {
+          "package_name": "com.mraihanfauzii.restrokotlin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD_XOhS4m6a33Zdx3m_cs7PTCcGcL7bLn8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
