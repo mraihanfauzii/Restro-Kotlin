@@ -19,7 +19,9 @@ data class CalendarProgramResponse(
     @SerializedName("terapis")
     val therapist: TherapistDetail?,
     @SerializedName("list_gerakan_direncanakan")
-    val plannedMovements: List<MovementDetail>?
+    val plannedMovements: List<MovementDetail>?,
+    @SerializedName("terapis_nama")
+    val therapistName: String?,
 ) : Parcelable
 
 @Parcelize
@@ -38,7 +40,9 @@ data class MovementDetail(
     @SerializedName("nama_gerakan") val movementName: String?,
     @SerializedName("deskripsi") val description: String?,
     @SerializedName("durasi_detik") val durationSeconds: Int?,
-    @SerializedName("jumlah_repetisi_direncanakan") val jumlahRepetisiDirencanakan: Int?
+    @SerializedName("jumlah_repetisi_direncanakan") val jumlahRepetisiDirencanakan: Int?,
+    @SerializedName("urutan_dalam_program") val urutanDalamProgram: Int?,
+    @SerializedName("url_foto") val imageUrl: String?
 ) : Parcelable
 
 @Parcelize

@@ -5,7 +5,6 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.Parcelable
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -14,16 +13,23 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.mediapipe.tasks.components.containers.Landmark
 import com.google.mediapipe.tasks.components.containers.NormalizedLandmark
 import com.google.mediapipe.tasks.vision.core.RunningMode
-import com.mraihanfauzii.restrokotlin.ExercisePerformance
 import com.mraihanfauzii.restrokotlin.PoseLandmarkerHelper
 import com.mraihanfauzii.restrokotlin.R
 import com.mraihanfauzii.restrokotlin.databinding.ActivityDetectBinding
+import com.mraihanfauzii.restrokotlin.model.DetailHasilGerakan
+import com.mraihanfauzii.restrokotlin.model.ExercisePerformance
+import com.mraihanfauzii.restrokotlin.model.SubmitReportRequest
+import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
+import com.mraihanfauzii.restrokotlin.viewmodel.ReportSubmitStatus
+import com.mraihanfauzii.restrokotlin.viewmodel.ReportViewModel
 import org.tensorflow.lite.Interpreter
 import java.nio.channels.FileChannel
+import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -35,20 +41,21 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
 
     /* ───── View binding ───── */
     private lateinit var binding: ActivityDetectBinding
+    private lateinit var reportViewModel: ReportViewModel
 
     /* ───── Hyper-parameter model ───── */
     private val seqLen   = 60
     private val numFeat  = 33 * 2            // 33 landmark × (x,y)
-    private val needConf = 0.60f             // ambang “Sempurna”
+    private val needConf = 0.50f             // ambang “Sempurna”
     private val holdSec  = 2.0               // tahan 2 d
     private val prepSec  = 5                 // hitung-mundur 3 d
     private val TH_VIS = 0.35f
 
     /* Gerakan yg hanya butuh tubuh atas → kaki disembunyikan di OverlayView */
     private val upperBodyOnlyActions = setOf(
-        "Rentangkan",
+        "Rentangkan Tangan",
         "Naikan Kepalan Kedepan",
-        "Angkat Tangan"
+        "Angkat Tangan Kedepan"
     )
 
     /* ───── Indeks landmark kaki (hip–foot_index) ───── */
@@ -84,6 +91,9 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
     /* ───── Sesi latihan ───── */
     private var plannedExercises : List<Map<String, Any>> = emptyList()
     private var maxDurationPerRep = 20
+    private var programId: Int = -1 // Menyimpan ID program
+    private var programName: String = "-" // Menyimpan nama program
+    private var sessionStartTime: Long = 0L // Waktu mulai sesi keseluruhan
 
     private val sessionSummary = mutableListOf<ExercisePerformance>()
     private var currentExerciseIndex = 0
@@ -116,6 +126,8 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
         binding = ActivityDetectBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        reportViewModel = ViewModelProvider(this).get(ReportViewModel::class.java)
+
         /* ---------- 1. Ambil data intent ---------- */
         // Selalu kirim dari fragment sebagai ArrayList<Bundle>
         val arrayList: ArrayList<Bundle>? =
@@ -127,32 +139,34 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
 
         val bundles: List<Bundle> = arrayList ?: arrayAsList ?: emptyList()
 
-        plannedExercises = bundles.map {
+        plannedExercises = bundles?.map {
             mapOf(
                 "actionName" to (it.getString("actionName") ?: ""),
-                "targetReps" to it.getInt("targetReps", 1)
+                "targetReps" to it.getInt("targetReps", 1),
+                "gerakanId" to it.getInt("gerakanId", -1), // Ambil gerakanId
+                "orderInProgram" to it.getInt("orderInProgram", -1) // Ambil orderInProgram
             )
-        }
+        }!!
 
         maxDurationPerRep = intent.getIntExtra("maxDurationPerRep", 20)
-        val programName    = intent.getStringExtra("programName") ?: "-"
-        val programId      = intent.getIntExtra("programId", -1)
+        programName    = intent.getStringExtra("programName") ?: "-"
+        programId      = intent.getIntExtra("programId", -1)
 
         Log.d(TAG, "plannedExercises = $plannedExercises")
-        Log.d(TAG, "maxDurationPerRep = $maxDurationPerRep, programName = $programName, programId = $programId")
+        Log.d(TAG, "maxDurationPerRep = $maxDurationPerRep")
+        Log.d(TAG, "Received programName: $programName")
+        Log.d(TAG, "Received programId: $programId")
 
-        if (plannedExercises.isEmpty()) {
-            Toast.makeText(this,
-                "Tidak ada gerakan yang direncanakan untuk deteksi.",
-                Toast.LENGTH_LONG).show()
+        if (this.plannedExercises.isEmpty()) {
+            Toast.makeText(this, "Tidak ada gerakan yang direncanakan untuk deteksi.", Toast.LENGTH_LONG).show()
+            Log.e(TAG, "Planned exercises list is empty. Finishing activity.")
             finish()
-            return
+            return // Penting: keluar dari onCreate
         }
 
         /* ---------- 2. Setup eksekutor & UI ---------- */
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
-        binding.cameraSwitchButton.setOnClickListener { switchCamera() }
         binding.viewFinder.post { setUpCamera() }
 
         uiUpdateRunnable = object : Runnable {
@@ -165,6 +179,29 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
 
         /* ---------- 3. Bootstrap pose-landmark & model ---------- */
         bootstrap()
+
+        sessionStartTime = System.currentTimeMillis()
+
+        reportViewModel.submitReportStatus.observe(this) { status ->
+            when (status) {
+                is ReportSubmitStatus.Loading -> {
+                    Toast.makeText(this, "Mengirim laporan...", Toast.LENGTH_SHORT).show()
+                }
+                is ReportSubmitStatus.Success -> {
+                    Toast.makeText(this, "Laporan berhasil dikirim!", Toast.LENGTH_SHORT).show()
+                    finish() // Tutup activity setelah berhasil kirim laporan
+                }
+                is ReportSubmitStatus.Error -> {
+                    Log.e(TAG, "Error mengirim laporan: ${status.message}, Kode: ${status.errorCode}")
+                    Toast.makeText(this, "Gagal mengirim laporan: ${status.message}", Toast.LENGTH_LONG).show()
+                    // Kembali ke dialog utama setelah error
+                    showReportSummaryDialog()
+                }
+                ReportSubmitStatus.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
     }
 
     /* ───────────────────────── bootstrap ───────────────────────── */
@@ -358,8 +395,10 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
         }
         val plan = plannedExercises[currentExerciseIndex]
         currentExercisePerformance = ExercisePerformance(
-            plan["actionName"] as String,
-            plan["targetReps"] as Int
+            actionName      = plan["actionName"] as String,
+            targetReps      = plan["targetReps"] as Int,
+            gerakanId       = plan["gerakanId"] as Int,      // Ambil ID gerakan
+            orderInProgram  = plan["orderInProgram"] as Int  // Ambil urutan program
         )
         // maskLegsForCurrentExercise hanya mengontrol apa yang digambar di UI overlay
         maskLegsForCurrentExercise =
@@ -390,6 +429,9 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
     private fun completeRepetition(result: String) {
         if (isRepetitionComplete) return
         isRepetitionComplete = true
+
+        val timeSpentInThisRep = System.currentTimeMillis() - repetitionStartTime
+        currentExercisePerformance!!.actualDurationMs += timeSpentInThisRep
 
         currentExercisePerformance!!.recordAttempt(result)
         currentInstruction = if (result == "Sempurna") "BERHASIL!" else "WAKTU HABIS!"
@@ -575,24 +617,23 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
     /* ═════════════ Sesi selesai ═════════════ */
     private fun finishSession() {
         uiUpdateRunnable?.let { runnable ->
-            uiUpdateHandler.removeCallbacks(runnable) }
+            uiUpdateHandler.removeCallbacks(runnable)
+        }
 
-        Log.d(TAG, "Session finished")
+        // Pastikan ExercisePerformance terakhir juga disimpan
+        currentExercisePerformance?.let {
+            // Tambahkan durasi terakhir sebelum menambahkan ke summary (jika belum ada)
+            if (repetitionStartTime != 0L && !isRepetitionComplete) {
+                it.actualDurationMs += (System.currentTimeMillis() - repetitionStartTime)
+            }
+            if (!sessionSummary.contains(it) && (it.completedReps > 0 || it.failedAttempts > 0 || it.undetectedCount > 0)) {
+                // Hanya tambahkan jika ada hasil yang tercatat
+                sessionSummary.add(it)
+            }
+        }
+        Log.d(TAG, "Session finished. Session summary: $sessionSummary")
 
-        val totalOk  = sessionSummary.sumOf { it.completedReps }
-        val totalNg  = sessionSummary.sumOf { it.failedAttempts }
-
-        AlertDialog.Builder(this)
-            .setTitle("Sesi Latihan Selesai!")
-            .setMessage(
-                "Sempurna : $totalOk\n" +
-                        "Tidak Tepat : $totalNg\n\n" +
-                        sessionSummary.joinToString("\n") {
-                            "${it.actionName}: ${it.completedReps} Sempurna, ${it.failedAttempts} Gagal"
-                        }
-            )
-            .setPositiveButton("OK") { d, _ -> d.dismiss(); finish() }
-            .setCancelable(false).show()
+        showReportSummaryDialog()
     }
 
     private fun showErrorAndPop(msg: String) {
@@ -604,11 +645,108 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
         }
     }
 
+    private fun showReportSummaryDialog() {
+        val totalOk  = sessionSummary.sumOf { it.completedReps }
+        val totalNg  = sessionSummary.sumOf { it.failedAttempts }
+        val totalUndetected = sessionSummary.sumOf { it.undetectedCount }
+
+        // Hitung total waktu rehabilitasi
+        val totalRehabDurationSeconds = (System.currentTimeMillis() - sessionStartTime) / 1000
+
+        // Bangun ringkasan laporan
+        val summaryMessage = buildString {
+            append("Sesi Latihan Selesai: $programName\n\n")
+            append("Rangkuman:\n")
+            append("  Sempurna: $totalOk\n")
+            append("  Tidak Tepat: $totalNg\n")
+            append("  Tidak Terdeteksi: $totalUndetected\n")
+            append("  Total Waktu Sesi: ${totalRehabDurationSeconds} detik\n\n")
+            append("Detail Gerakan:\n")
+            sessionSummary.forEach { performance ->
+                append("  - ${performance.actionName}: Sempurna ${performance.completedReps}, Gagal ${performance.failedAttempts}, Tidak Terdeteksi ${performance.undetectedCount}, Waktu ${performance.actualDurationMs / 1000}s\n")
+            }
+        }
+
+        val alertDialog = AlertDialog.Builder(this)
+            .setTitle("Sesi Latihan Selesai!")
+            .setMessage(summaryMessage)
+            .setCancelable(false)
+            .setPositiveButton("Kirim Laporan") { dialog, _ ->
+                dialog.dismiss()
+                showSendReportConfirmationDialog()
+            }
+            .setNegativeButton("Ulangi Program") { dialog, _ ->
+                dialog.dismiss()
+                // Untuk mengulang program, kita bisa memulai ulang activity
+                recreate()
+            }
+            .create()
+
+        alertDialog.show()
+    }
+
+    private fun showSendReportConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Kirim Laporan")
+            .setMessage("Apakah Anda yakin akan mengirim laporan ini ke terapis Anda?")
+            .setPositiveButton("Ya, Kirim") { dialog, _ ->
+                dialog.dismiss()
+                sendReport()
+            }
+            .setNegativeButton("Tidak, Batalkan") { dialog, _ ->
+                dialog.dismiss()
+                // Kembali ke popup ringkasan sesi jika dibatalkan
+                showReportSummaryDialog() // Panggil ulang untuk menampilkan dialog sebelumnya
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun sendReport() {
+        val authenticationManager = AuthenticationManager(this)
+        val token = authenticationManager.getAccess(AuthenticationManager.TOKEN)
+
+        if (token == null) {
+            Toast.makeText(this, "Autentikasi gagal. Silakan login ulang.", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Buat list DetailHasilGerakan
+        val detailHasilGerakanList = sessionSummary.map { performance ->
+            DetailHasilGerakan(
+                gerakanId = performance.gerakanId,
+                urutanGerakanDalamProgram = performance.orderInProgram,
+                jumlahSempurna = performance.completedReps,
+                jumlahTidakSempurna = performance.failedAttempts,
+                jumlahTidakTerdeteksi = performance.undetectedCount,
+                waktuAktualPerGerakanDetik = (performance.actualDurationMs / 1000).toInt()
+            )
+        }
+
+        // Hitung total waktu rehabilitasi
+        val totalRehabDurationSeconds = (System.currentTimeMillis() - sessionStartTime) / 1000
+
+        // Dapatkan tanggal laporan hari ini
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        val tanggalLaporan = dateFormat.format(Date())
+
+        // Buat request body
+        val requestBody = SubmitReportRequest(
+            programRehabilitasiId = programId,
+            tanggalLaporan = tanggalLaporan,
+            totalWaktuRehabilitasiDetik = totalRehabDurationSeconds.toInt(),
+            catatanPasienLaporan = "Sesi latihan ${programName} selesai.", // Placeholder catatan
+            detailHasilGerakan = detailHasilGerakanList
+        )
+
+        reportViewModel.submitRehabReport("Bearer $token", requestBody)
+    }
+
     /* ────────── cleanup ────────── */
     override fun onDestroy() {
         super.onDestroy()
-        uiUpdateRunnable?.let {
-            runnable -> uiUpdateHandler.removeCallbacks(runnable)
+        uiUpdateRunnable?.let { runnable ->
+            uiUpdateHandler.removeCallbacks(runnable)
         }
 
         if (::backgroundExecutor.isInitialized) {
@@ -618,7 +756,10 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
         catch (e: InterruptedException) { Log.e(TAG, "Executor shutdown interrupted", e) }
 
         poseLandmarkerHelper?.clearPoseLandmarker()
-        interpreter.close()
+        if (::interpreter.isInitialized) {
+            interpreter.close()
+        }
+        reportViewModel.resetStatus() // Reset status ViewModel
     }
 
     /* ────────── switch camera ────────── */

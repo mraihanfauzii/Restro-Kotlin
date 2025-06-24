@@ -2,20 +2,18 @@ package com.mraihanfauzii.restrokotlin.ui.main.calendar
 
 import android.app.AlertDialog
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.fragment.app.setFragmentResult
 import androidx.lifecycle.ViewModelProvider
-import androidx.navigation.findNavController
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mraihanfauzii.restrokotlin.R
 import com.mraihanfauzii.restrokotlin.databinding.FragmentProgramDetailBottomSheetBinding
 import com.mraihanfauzii.restrokotlin.model.CalendarProgramResponse
+import com.mraihanfauzii.restrokotlin.model.ReportItem
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
 import com.mraihanfauzii.restrokotlin.viewmodel.ProgramDetailViewModel
-import android.os.Parcelable
 
 class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -30,6 +28,16 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
     companion object {
         const val TAG = "ProgramDetailBottomSheet"
         private const val ARG_PROGRAM_ID = "program_id_arg"
+
+        // Keys untuk Fragment Result API
+        const val REQUEST_KEY_PROGRAM_UPDATE = "request_key_program_update"
+        const val BUNDLE_KEY_UPDATE_SUCCESS = "bundle_key_update_success"
+
+        // === TAMBAHKAN KEYS BARU UNTUK NAVIGASI ===
+        const val REQUEST_KEY_NAVIGATE = "request_key_navigate_from_bottom_sheet"
+        const val BUNDLE_KEY_NAV_ACTION = "bundle_key_nav_action"
+        const val BUNDLE_KEY_PROGRAM_DETAIL = "bundle_key_program_detail" // Untuk ProgramPreparationFragment
+        const val BUNDLE_KEY_PROGRAM_ID_REPORT = "bundle_key_program_id_report" // Untuk ReportHistoryFragment
 
         fun newInstance(programId: Int): ProgramDetailBottomSheetFragment {
             val fragment = ProgramDetailBottomSheetFragment()
@@ -101,9 +109,16 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
         programDetailViewModel.updateStatusSuccess.observe(viewLifecycleOwner) { isSuccess ->
             if (isSuccess) {
                 Toast.makeText(requireContext(), "Status program berhasil diperbarui!", Toast.LENGTH_SHORT).show()
-                (parentFragment as? CalendarFragment)?.loadCalendarProgramsForMonth(
-                    (parentFragment as CalendarFragment).currentFocusedMonth
-                )
+                // Kirim hasil ke target fragment (CalendarFragment)
+                setFragmentResult(REQUEST_KEY_PROGRAM_UPDATE, Bundle().apply {
+                    putBoolean(BUNDLE_KEY_UPDATE_SUCCESS, true)
+                })
+                programId?.let { id ->
+                    val token = authenticationManager.getAccess(AuthenticationManager.TOKEN)
+                    if (token != null) {
+                        programDetailViewModel.getProgramDetail(token, id)
+                    }
+                }
             }
         }
 
@@ -113,6 +128,34 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 programDetailViewModel.clearErrorMessage()
             }
         }
+
+        programDetailViewModel.historyForProgram.observe(viewLifecycleOwner) { list ->
+            if (list != null) showHistoryDialog(list)
+        }
+    }
+
+    private fun showHistoryDialog(items: List<ReportItem>) {
+        val msg = buildString {
+            items.forEachIndexed { idx, rpt ->
+                append("» Laporan #${idx + 1}  ( ${rpt.submittedAt} )\n")
+                append("   • Durasi total : ${rpt.totalSeconds ?: 0}s\n")
+                append("   • Poin         : ${rpt.points ?: 0}\n")
+                rpt.summary?.let {
+                    append("   • Ringkasan    : ✔️ ${it.ok}  ✖️ ${it.ng}  ⚠️ ${it.undetected}\n")
+                }
+                rpt.details?.forEach { d ->
+                    append("        - ${d.nama}  ➜  ✔️${d.ok}/✖️${d.ng}/⚠️${d.undetected}  (${d.durasi}s)\n")
+                }
+                rpt.note?.let { append("   • Catatan      : $it\n") }
+                append("\n")
+            }
+        }
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Riwayat Laporan (${items.size})")
+            .setMessage(msg.trimEnd())
+            .setPositiveButton("Tutup", null)
+            .show()
     }
 
     private fun displayProgramDetails(program: CalendarProgramResponse) {
@@ -138,37 +181,39 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
                     text = "Lanjutkan Program"
                     visibility = View.VISIBLE
                     setOnClickListener {
-                        val plannedBundles = program.plannedMovements?.map { m ->
-                            Bundle().apply {
-                                putString("actionName",  m.movementName)
-                                putInt   ("targetReps",  m.jumlahRepetisiDirencanakan ?: 1)
-                            }
-                        } ?: emptyList()
-
-                        val maxDuration = program.plannedMovements?.firstOrNull()?.durationSeconds ?: 20
-
-                        if (plannedBundles.isNotEmpty()) {
-                            val navBundle = Bundle().apply {
-                                putParcelableArray("plannedExercises", plannedBundles.toTypedArray())
-                                putInt   ("maxDurationPerRep", maxDuration)
-                                putString("programName", program.programName)
-                                putInt   ("programId",   program.id ?: -1)
-                            }
-                            Log.d(TAG, "Navigating with array: $plannedBundles, maxDur=$maxDuration")
-                            requireActivity()
-                                .findNavController(R.id.activityMainNavHostFragment)
-                                .navigate(R.id.action_calendarFragment_to_detectActivity, navBundle)
-                            dismiss()
-                        } else {
-                            Toast.makeText(requireContext(),
-                                "Tidak ada gerakan yang direncanakan.", Toast.LENGTH_SHORT).show()
+                        if (program.plannedMovements.isNullOrEmpty()) {
+                            Toast.makeText(requireContext(), "Program ini tidak memiliki gerakan yang direncanakan.", Toast.LENGTH_SHORT).show()
+                            return@setOnClickListener
                         }
+
+                        // Kirim request navigasi ke CalendarFragment melalui Fragment Result API
+                        setFragmentResult(REQUEST_KEY_NAVIGATE, Bundle().apply {
+                            putString(BUNDLE_KEY_NAV_ACTION, "to_program_preparation")
+                            putParcelable(BUNDLE_KEY_PROGRAM_DETAIL, program)
+                        })
+
+                        dismiss() // Tutup bottom sheet setelah request dikirim
                     }
                 }
             }
-            "selesai", "dibatalkan" -> {
-                binding.btnActionProgram.visibility = View.GONE
+            "selesai" -> {
+                binding.btnActionProgram.apply {
+                    text = "Lihat Riwayat Laporan"
+                    visibility = View.VISIBLE
+                    setOnClickListener {
+                        // **** PERBAIKAN UTAMA DI SINI ****
+                        // Kirim request navigasi ke CalendarFragment melalui Fragment Result API
+                        setFragmentResult(REQUEST_KEY_NAVIGATE, Bundle().apply {
+                            putString(BUNDLE_KEY_NAV_ACTION, "to_report_history")
+                            putInt(BUNDLE_KEY_PROGRAM_ID_REPORT, program.id!!)
+                        })
+
+                        dismiss() // Tutup bottom sheet setelah request dikirim
+                    }
+                }
             }
+
+            "dibatalkan" -> binding.btnActionProgram.visibility = View.GONE
             else -> {
                 binding.btnActionProgram.visibility = View.GONE
             }

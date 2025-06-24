@@ -29,6 +29,12 @@
         <action
             android:id="@+id/action_calendarFragment_to_detectActivity"
             app:destination="@id/detectActivity" />
+        <action
+            android:id="@+id/action_calendarFragment_to_programPreparationFragment"
+            app:destination="@id/programPreparationFragment" />
+        <action
+            android:id="@+id/action_calendarFragment_to_reportHistoryFragment"
+            app:destination="@id/reportHistoryFragment" />
     </fragment>
     <dialog
         android:id="@+id/programDetailBottomSheetFragment"
@@ -39,6 +45,15 @@
             android:name="program_id_arg"
             app:argType="integer" />
     </dialog>
+    <fragment
+        android:id="@+id/reportHistoryFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.calendar.ReportHistoryFragment"
+        android:label="Riwayat Laporan"
+        tools:layout="@layout/fragment_report_history">
+        <argument
+            android:name="PROGRAM_ID_ARG"
+            app:argType="integer" />
+    </fragment>
     <fragment
         android:id="@+id/chatListFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatListFragment"
@@ -52,10 +67,10 @@
             app:destination="@id/chatBotDetailFragment" />
     </fragment>
     <fragment
-    android:id="@+id/chatDetailFragment"
-    android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatDetailFragment"
-    android:label="ChatDetailFragment"
-    tools:layout="@layout/fragment_chat_detail">
+        android:id="@+id/chatDetailFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatDetailFragment"
+        android:label="ChatDetailFragment"
+        tools:layout="@layout/fragment_chat_detail">
         <argument
             android:name="THERAPIST_ID_KEY"
             app:argType="string"
@@ -145,5 +160,18 @@
         android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatBotDetailFragment"
         android:label="Gemini AI Chatbot"
         tools:layout="@layout/fragment_chat_bot_detail" />
+    <fragment
+        android:id="@+id/programPreparationFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.calendar.ProgramPreparationFragment"
+        android:label="Persiapan Program"
+        tools:layout="@layout/fragment_program_preparation">
+        <argument
+            android:name="program_detail_arg"
+            app:argType="com.mraihanfauzii.restrokotlin.model.CalendarProgramResponse"
+            app:nullable="true" />
+        <action
+            android:id="@+id/action_programPreparationFragment_to_detectActivity"
+            app:destination="@id/detectActivity" />
+    </fragment>
 
 </navigation>

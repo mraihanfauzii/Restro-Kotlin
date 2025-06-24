@@ -28,8 +28,8 @@ class CalendarEventAdapter(private val onItemClick: (CalendarProgramResponse) ->
 
         fun bind(program: CalendarProgramResponse) {
             binding.tvProgramName.text = program.programName ?: "-"
-            binding.tvProgramStatus.text = program.status ?: "-"
-            binding.tvTherapistName.text = program.therapist?.fullName ?: "-"
+            binding.tvProgramStatus.text = formatProgramStatus(program.status)
+            binding.tvTherapistName.text = program.therapistName ?: "-"
 
             // Format tanggal jika ada
             program.programDate?.let { dateString ->
@@ -45,9 +45,18 @@ class CalendarEventAdapter(private val onItemClick: (CalendarProgramResponse) ->
                 binding.tvProgramDate.text = "-"
             }
 
-
             binding.root.setOnClickListener {
                 onItemClick(program)
+            }
+        }
+
+        private fun formatProgramStatus(status: String?): String {
+            return when (status) {
+                "belum_dimulai" -> "Belum Dimulai"
+                "berjalan" -> "Berjalan"
+                "selesai" -> "Selesai"
+                "dibatalkan" -> "Dibatalkan" // Tambahkan jika ada status "dibatalkan"
+                else -> "-" // Fallback untuk status yang tidak dikenal atau null
             }
         }
     }

@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mraihanfauzii.restrokotlin.api.ApiConfig
 import com.mraihanfauzii.restrokotlin.model.CalendarProgramResponse
+import com.mraihanfauzii.restrokotlin.model.ReportItem
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 
@@ -14,6 +15,9 @@ class ProgramDetailViewModel : ViewModel() {
 
     private val _programDetail = MutableLiveData<CalendarProgramResponse?>()
     val programDetail: LiveData<CalendarProgramResponse?> = _programDetail
+
+    private val _historyForProgram = MutableLiveData<List<ReportItem>>()
+    val historyForProgram: LiveData<List<ReportItem>> = _historyForProgram
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -79,6 +83,24 @@ class ProgramDetailViewModel : ViewModel() {
                 _updateStatusSuccess.value = false
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+
+    fun loadHistoryForProgram(token: String, programId: Int) {
+        viewModelScope.launch {
+            try {
+                val resp = ApiConfig.getApiService()
+                    .getPatientHistory("Bearer $token")
+                // filter hanya laporan milik program ini
+                val filtered = resp.laporan?.filter {
+                    it.programInfo?.id == programId
+                }.orEmpty()
+                _historyForProgram.value = filtered
+            } catch (e: Exception) {
+                Log.e("ProgramDetailVM", "history error", e)
+                _errorMessage.value = "Gagal memuat riwayat laporan."
             }
         }
     }

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="6dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/tvMovementName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:textColor="@color/black"
+            tools:text="1. Rentangkan Tangan" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="4dp">
+
+            <TextView
+                android:id="@+id/tvMovementOk"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="4dp"
+                android:layout_marginEnd="8dp"
+                tools:text="Sempurna: 5" />
+
+            <TextView
+                android:id="@+id/tvMovementNg"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="4dp"
+                android:layout_marginEnd="8dp"
+                tools:text="Tidak Sempurna: 0" />
+
+            <TextView
+                android:id="@+id/tvMovementUndetected"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:drawablePadding="4dp"
+                tools:text="Tidak Terdeteksi: 0" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvMovementDuration"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawablePadding="4dp"
+            android:gravity="center_vertical"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/black"
+            tools:text="Durasi: 17s" />
+
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

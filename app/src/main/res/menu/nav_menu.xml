@@ -11,7 +11,8 @@
         android:title="@string/calendar"/>
     <item
         android:id="@+id/chatListFragment"
-        android:icon="@drawable/baseline_sports_gymnastics_24"
+        android:icon="@drawable/outline_business_messages_24"
+        android:iconTint="#818181"
         android:title="@string/chat"/>
     <item
         android:id="@+id/foodFragment"

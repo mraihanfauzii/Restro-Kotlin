@@ -17,27 +17,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <!-- Top Bar for Camera Switch Button -->
-    <LinearLayout
-        android:id="@+id/topBar"
-        android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#80000000"
-        android:gravity="end|center_vertical"
-        android:paddingEnd="8dp"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <ImageButton
-            android:id="@+id/cameraSwitchButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/baseline_cameraswitch_24"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Switch Camera"
-            android:padding="8dp" />
-    </LinearLayout>
-
     <!-- Bottom Overlay for Exercise Info -->
     <LinearLayout
         android:id="@+id/bottomOverlay"

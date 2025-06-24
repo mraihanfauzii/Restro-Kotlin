@@ -11,12 +11,14 @@ import com.mraihanfauzii.restrokotlin.model.LoginRequest
 import com.mraihanfauzii.restrokotlin.model.LoginResponse
 import com.mraihanfauzii.restrokotlin.model.MyBadgesResponse
 import com.mraihanfauzii.restrokotlin.model.PatientProfileResponse
+import com.mraihanfauzii.restrokotlin.model.PatientReportHistoryResponse
 import com.mraihanfauzii.restrokotlin.model.ProfilePictureUploadResponse
 import com.mraihanfauzii.restrokotlin.model.ProfileUpdateRequest
 import com.mraihanfauzii.restrokotlin.model.ProgramHistoryResponse
 import com.mraihanfauzii.restrokotlin.model.RegisterResponse
 import com.mraihanfauzii.restrokotlin.model.RegisterRequest
 import com.mraihanfauzii.restrokotlin.model.SingleProgramDetailResponse
+import com.mraihanfauzii.restrokotlin.model.SubmitReportRequest
 import com.mraihanfauzii.restrokotlin.model.TherapistListResponse
 import com.mraihanfauzii.restrokotlin.model.UpdateStatusProgramResponse
 import okhttp3.MultipartBody
@@ -125,4 +127,17 @@ interface ApiService {
         @Query("page") page: Int? = null,
         @Query("per_page") perPage: Int? = null
     ): ProgramHistoryResponse
+
+    @POST("api/laporan/submit")
+    suspend fun submitRehabReport(
+        @Header("Authorization") token: String,
+        @Body request: SubmitReportRequest
+    ): Response<GeneralResponse>
+
+    @GET("api/laporan/pasien/history")
+    suspend fun getPatientHistory(
+        @Header("Authorization") auth: String,
+        @Query("page")     page: Int  = 1,
+        @Query("per_page") perPage: Int = 50
+    ): PatientReportHistoryResponse
 }

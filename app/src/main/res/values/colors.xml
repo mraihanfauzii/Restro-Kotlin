@@ -1,20 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="purple_200">#FF03DAC5</color>
-    <color name="purple_500">#29AF6F</color>
-    <color name="purple_700">#FF018786</color>
+    <color name="purple_500">#29AF6F</color> <color name="purple_700">#FF018786</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
+
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Custom colors for toolbar and nav bar -->
+    <color name="your_primary_green">#29AF6F</color>
+    <color name="your_dark_green_nav_bar">#1E7F55</color>
+    <color name="your_secondary_yellow">#FBBC04</color>
+    <color name="your_accent_orange">#FF4500</color>
+    <color name="your_background_white">#FAFDFA</color>
+    <color name="your_surface_color">#FFFFFF</color>
+    <color name="your_text_dark">#191C1B</color>
+    <color name="your_text_light">#FFFFFF</color>
     <color name="toolbar_background">#FFFFFF</color>
-    <color name="bottom_sheet_background">#B3000000</color> <!-- Black with 70% opacity -->
-    <color name="perfect_quality_color">#90EE90</color> <!-- Green accent -->
-    <color name="imperfect_quality_color">#FF4500</color> <!-- Orange accent -->
-    <color name="progress_bar_color">#FFFF00</color> <!-- Yellow for progress bar -->
-
+    <color name="bottom_sheet_background">#B3000000</color>
+    <color name="perfect_quality_color">#90EE90</color>
+    <color name="imperfect_quality_color">#FF4500</color>
+    <color name="progress_bar_color">#FFFF00</color>
     <color name="mp_color_primary">#007F8B</color>
     <color name="mp_color_primary_variant">#12B5CB</color>
     <color name="mp_color_primary_dark">#00676D</color>
