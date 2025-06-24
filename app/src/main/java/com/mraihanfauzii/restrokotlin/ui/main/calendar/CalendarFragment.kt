@@ -10,7 +10,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mraihanfauzii.restrokotlin.adapter.calendar.CalendarEventAdapter
 import com.mraihanfauzii.restrokotlin.databinding.FragmentCalendarBinding
-import com.mraihanfauzii.restrokotlin.model.CalendarProgramResponse
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
 import com.mraihanfauzii.restrokotlin.viewmodel.CalendarViewModel
 import java.text.SimpleDateFormat
@@ -24,9 +23,9 @@ class CalendarFragment : Fragment() {
 
     private lateinit var calendarViewModel: CalendarViewModel
     private lateinit var authenticationManager: AuthenticationManager
-    lateinit var calendarEventAdapter: CalendarEventAdapter // Buat ini public atau internal agar bisa diakses dari bottom sheet
+    lateinit var calendarEventAdapter: CalendarEventAdapter
 
-    var currentFocusedMonth: Calendar = Calendar.getInstance() // Buat ini public atau internal agar bisa diakses dari bottom sheet
+    var currentFocusedMonth: Calendar = Calendar.getInstance()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -50,7 +49,6 @@ class CalendarFragment : Fragment() {
 
     private fun setupRecyclerView() {
         calendarEventAdapter = CalendarEventAdapter { program ->
-            // Hanya kirim ID program ke bottom sheet
             program.id?.let {
                 showProgramDetail(it)
             } ?: Toast.makeText(requireContext(), "ID Program tidak ditemukan.", Toast.LENGTH_SHORT).show()
@@ -103,7 +101,7 @@ class CalendarFragment : Fragment() {
         }
     }
 
-    fun loadCalendarProgramsForMonth(calendar: Calendar) { // Ubah akses ke public
+    fun loadCalendarProgramsForMonth(calendar: Calendar) {
         val token = authenticationManager.getAccess(AuthenticationManager.TOKEN)
         if (token != null) {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())

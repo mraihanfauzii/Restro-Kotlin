@@ -1,138 +1,139 @@
-//package com.mraihanfauzii.restrokotlin.viewmodel
-//
-//import android.util.Log
-//import androidx.activity.result.launch
-//import androidx.compose.animation.core.copy
-//import androidx.core.util.remove
-//import androidx.core.util.size
-//import androidx.datastore.core.Message
-//import androidx.fragment.app.add
-//import androidx.lifecycle.MutableLiveData
-//import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.viewModelScope
-//import android.util.Log
-//import androidx.lifecycle.LiveData
-//import androidx.lifecycle.MutableLiveData
-//import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.viewModelScope
-//import com.google.firebase.auth.FirebaseAuth
-//import com.google.firebase.firestore.FieldValue
-//import com.google.firebase.firestore.FirebaseFirestore
-//import com.google.firebase.firestore.ListenerRegistration
-//import com.google.firebase.firestore.Query
-//import com.mraihanfauzii.restrokotlin.model.Message // Sesuaikan dengan package Anda
-//import kotlinx.coroutines.launch
-//import kotlinx.coroutines.tasks.await
-//
-//class ChatTerapisViewModel:ViewModel() {
-//
-//    private val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-//    private val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
-//
-//    private val _messages = MutableLiveData<List<Message>>()
-//    val messages: LiveData<List<android.os.Message>> = _messages
-//
-//    private val _sendMessageStatus = MutableLiveData<Boolean>()
-//    val sendMessageStatus: LiveData<Boolean> = _sendMessageStatus
-//
-//    private var messagesListener: com.google.firebase.firestore.ListenerRegistration? = null
-//
-//    // Ganti dengan ID aplikasi Anda di Firebase
-//    private val appId = "ELEVAITE" // atau "FlaskApp" sesuai konfigurasi Anda
-//
-//    // ID pengguna saat ini (pasien) dan ID terapis yang diajak chat
-//    // Anda perlu mendapatkan ID ini dari sumber lain (misalnya, dari argumen Fragment atau SharedViewModel)
-//    var currentUserId: String? = auth.currentUser?.uid
-//    var therapistId: String? = null // Ini harus di-set dari luar ViewModel
-//
-//    private var chatRoomId: String? = null
-//
-//    fun setChatParticipants(patientId: String, therapistId: String) {
-//        this.currentUserId = patientId
-//        this.therapistId = therapistId
-//        // Buat chatRoomId yang konsisten. Contoh: urutkan ID secara alfabetis
-//        val ids = listOf(patientId, therapistId).sorted()
-//        this.chatRoomId = "chat_terapis_pasien_${ids[0]}_${ids[1]}" // Sesuaikan format ini
-//        Log.d("ChatViewModel", "ChatRoomID set to: ${this.chatRoomId}")
-//        listenForMessages()
-//    }
-//
-//    private fun listenForMessages() {
-//        if (chatRoomId == null || currentUserId == null) {
-//            Log.w("ChatViewModel", "ChatRoomId or CurrentUserId is null. Cannot listen for messages.")
-//            _messages.value = emptyList() // Atau tampilkan pesan error
-//            return
-//        }
-//
-//        messagesListener?.remove() // Hapus listener sebelumnya jika ada
-//
-//        val messagesCollection = db.collection("artifacts")
-//            .document(appId)
-//            .collection("public")
-//            .document("data")
-//            .collection("chat_rooms")
-//            .document(chatRoomId!!) // chatRoomId sudah dipastikan tidak null di sini
-//            .collection("messages")
-//            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING) // Urutkan pesan berdasarkan waktu
-//
-//        messagesListener = messagesCollection.addSnapshotListener { snapshots, e ->
-//            if (e != null) {
-//                Log.w("ChatViewModel", "Listen failed.", e)
-//                _messages.value = emptyList() // Atau tampilkan pesan error
-//                return@addSnapshotListener
-//            }
-//
-//            val messageList = mutableListOf<Message>()
-//            for (doc in snapshots!!) {
-//                try {
-//                    val message = doc.toObject(Message::class.java).copy(id = doc.id)
-//                    messageList.add(message)
-//                } catch (ex: Exception) {
-//                    Log.e("ChatViewModel", "Error converting message", ex)
-//                }
-//            }
-//            _messages.value = messageList
-//            Log.d("ChatViewModel", "Messages loaded: ${messageList.size}")
-//        }
-//    }
-//
-//    fun sendMessage(text: String, receiverId: String) {
-//        if (text.isBlank() || chatRoomId == null || currentUserId == null) {
-//            _sendMessageStatus.value = false
-//            Log.w("ChatViewModel", "Cannot send message: text is blank, chatRoomId or currentUserId is null.")
-//            return
-//        }
-//
-//        val message = Message(
-//            senderId = currentUserId!!,
-//            receiverId = receiverId,
-//            text = text,
-//            timestamp = null, // Akan diisi oleh server
-//            senderName = auth.currentUser?.displayName // Opsional, bisa juga nama dari profil Anda
-//        )
-//
-//        viewModelScope.launch {
-//            try {
-//                db.collection("artifacts")
-//                    .document(appId)
-//                    .collection("public")
-//                    .document("data")
-//                    .collection("chat_rooms")
-//                    .document(chatRoomId!!)
-//                    .collection("messages")
-//                    .add(message)
-//                    .await()
-//                _sendMessageStatus.value = true
-//                Log.d("ChatViewModel", "Message sent successfully.")
-//            } catch (e: Exception) {
-//                Log.e("ChatViewModel", "Error sending message", e)
-//                _sendMessageStatus.value = false
-//            }
-//        }
-//    }
-//
-//    override fun onCleared() {
-//        super.onCleared()
-//        messagesListener?.remove() // Penting untuk menghapus listener agar tidak terjadi memory leak
-//    }
-//}
+package com.mraihanfauzii.restrokotlin.viewmodel
+
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.mraihanfauzii.restrokotlin.model.MessageTerapis
+import com.google.firebase.Timestamp
+import com.google.firebase.auth.FirebaseAuth
+import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
+import kotlinx.coroutines.launch
+import java.util.Date
+
+class ChatTerapisViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val db = FirebaseFirestore.getInstance()
+    private var chatRoomListener: ListenerRegistration? = null
+
+    private val _messages = MutableLiveData<List<MessageTerapis>>()
+    val messages: LiveData<List<MessageTerapis>> = _messages
+
+    private val _sendMessageStatus = MutableLiveData<Boolean>()
+    val sendMessageStatus: LiveData<Boolean> = _sendMessageStatus
+
+    // IDs of the current patient and therapist for the chat session
+    var currentUserId: String? = null
+        private set
+    var therapistId: String? = null
+        private set
+    var patientName: String? = null
+        private set
+
+    private val APP_ID = "app" // Ganti dengan ID aplikasi Flask Anda, misal: "ELEVAITE" atau "FlaskApp"
+
+    fun setChatParticipants(patientFirebaseUid: String, therapistFirebaseUid: String, patientAzureName: String) {
+        if (currentUserId == patientFirebaseUid && therapistId == therapistFirebaseUid) {
+            Log.d("ChatTerapisViewModel", "Chat participants already set and are the same.")
+            return
+        }
+
+        this.currentUserId = patientFirebaseUid
+        this.therapistId = therapistFirebaseUid
+        this.patientName = patientAzureName
+
+        // Stop previous listener if exists
+        chatRoomListener?.remove()
+        chatRoomListener = null
+
+        // Start new listener for the new chat room
+        listenForMessages()
+    }
+
+    private fun listenForMessages() {
+        if (currentUserId == null || therapistId == null) {
+            Log.e("ChatTerapisViewModel", "Cannot listen for messages: currentUserId or therapistId is null.")
+            return
+        }
+
+        // Construct chat room ID: ensure consistent order (e.g., therapist_id_patient_id)
+        // This must match the backend's chat room ID generation and Firestore rules
+        val chatRoomId = "chat_terapis_pasien_${therapistId}_${currentUserId}"
+        Log.d("ChatTerapisViewModel", "Listening for messages in chat room: $chatRoomId")
+
+        chatRoomListener = db.collection("artifacts")
+            .document(APP_ID)
+            .collection("public")
+            .document("data")
+            .collection("chat_rooms")
+            .document(chatRoomId)
+            .collection("messages")
+            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    Log.w("ChatTerapisViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                if (snapshots != null && !snapshots.isEmpty) {
+                    val messagesList = snapshots.documents.mapNotNull { it.toObject(MessageTerapis::class.java) }
+                    _messages.value = messagesList
+                    Log.d("ChatTerapisViewModel", "Received ${messagesList.size} messages.")
+                } else {
+                    _messages.value = emptyList()
+                    Log.d("ChatTerapisViewModel", "No messages in chat room yet.")
+                }
+            }
+    }
+
+    fun sendMessage(text: String) {
+        if (currentUserId == null || therapistId == null || patientName == null) {
+            Log.e("ChatTerapisViewModel", "Cannot send message: currentUserId, therapistId, or patientName is null.")
+            _sendMessageStatus.value = false
+            return
+        }
+
+        val message = MessageTerapis(
+            senderId = currentUserId!!,
+            senderName = patientName!!, // Use patient's name from Azure DB
+            text = text,
+            timestamp = Timestamp(Date()),
+            type = "patient_message" // Atau "terapis_message" dari sisi terapis
+        )
+
+        val chatRoomId = "chat_terapis_pasien_${therapistId}_${currentUserId}"
+
+        db.collection("artifacts")
+            .document(APP_ID)
+            .collection("public")
+            .document("data")
+            .collection("chat_rooms")
+            .document(chatRoomId)
+            .collection("messages")
+            .add(message)
+            .addOnSuccessListener {
+                Log.d("ChatTerapisViewModel", "Pesan berhasil dikirim!")
+                _sendMessageStatus.value = true
+            }
+            .addOnFailureListener { e ->
+                Log.e("ChatTerapisViewModel", "Gagal mengirim pesan", e)
+                _sendMessageStatus.value = false
+            }
+    }
+
+    // Fungsi untuk mendapatkan UID Firebase pengguna saat ini
+    fun getFirebaseCurrentUserUid(): String? {
+        val auth = FirebaseAuth.getInstance()
+        return auth.currentUser?.uid
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        chatRoomListener?.remove()
+        Log.d("ChatTerapisViewModel", "Chat listener removed.")
+    }
+}

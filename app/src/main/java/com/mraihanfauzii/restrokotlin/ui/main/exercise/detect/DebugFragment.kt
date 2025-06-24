@@ -3,6 +3,7 @@ package com.mraihanfauzii.restrokotlin.ui.main.exercise.detect
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Parcelable
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
@@ -27,10 +28,10 @@ import java.io.InputStreamReader
 class DebugFragment : Fragment() {
 
     private lateinit var actions: List<String>
-    private val plannedExercises = mutableListOf<MutableMap<String, Any>>() // {actionName: String, targetReps: Int, (optional) gerakanId: Int}
-    private var maxDurationPerRep: Int = 20 // Default value
-    private lateinit var exercisesContainer: LinearLayout // Container for dynamically added exercise views
-    private lateinit var rootView: View // Menyimpan referensi ke root view fragment
+    private val plannedExercises = mutableListOf<MutableMap<String, Any>>()
+    private var maxDurationPerRep: Int = 20
+    private lateinit var exercisesContainer: LinearLayout
+    private lateinit var rootView: View
 
     companion object {
         private const val REQUEST_CAMERA_PERMISSION = 100
@@ -56,7 +57,6 @@ class DebugFragment : Fragment() {
         setupAddExerciseSpinner()
         setupStartButton()
 
-        // Check and request permissions on app start
         if (!allPermissionsGranted()) {
             requestPermissions()
         }
@@ -64,7 +64,6 @@ class DebugFragment : Fragment() {
 
     private fun loadActions() {
         try {
-            // Gunakan requireContext().assets
             requireContext().assets.open("actions.txt").use { inputStream ->
                 BufferedReader(InputStreamReader(inputStream)).use { reader ->
                     actions = reader.readLines().map { it.trim() }.filter { it.isNotEmpty() }
@@ -79,7 +78,6 @@ class DebugFragment : Fragment() {
     }
 
     private fun setupMaxDurationSlider() {
-        // Gunakan rootView.findViewById
         val maxDurationTv: TextView = rootView.findViewById(R.id.maxDurationValue)
         maxDurationTv.text = "Durasi Maksimal per Repetisi (detik): $maxDurationPerRep"
 
@@ -96,7 +94,6 @@ class DebugFragment : Fragment() {
     }
 
     private fun setupAddExerciseSpinner() {
-        // Gunakan rootView.findViewById dan requireContext()
         val spinner: Spinner = rootView.findViewById(R.id.actionSpinner)
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, actions)
         spinner.adapter = adapter
@@ -112,7 +109,6 @@ class DebugFragment : Fragment() {
     }
 
     private fun showAddExerciseDialog(actionName: String) {
-        // Gunakan requireContext()
         val builder = AlertDialog.Builder(requireContext())
         builder.setTitle("Tambahkan $actionName")
 
@@ -157,7 +153,6 @@ class DebugFragment : Fragment() {
         rootView.findViewById<Button>(R.id.startButton).isEnabled = true
 
         plannedExercises.forEachIndexed { index, exercise ->
-            // Gunakan requireContext() untuk layoutInflater
             val exerciseView = layoutInflater.inflate(R.layout.item_planned_exercise, exercisesContainer, false) as CardView
             val actionNameTv: TextView = exerciseView.findViewById(R.id.actionNameTv)
             val repsTv: TextView = exerciseView.findViewById(R.id.repsTv)
@@ -185,7 +180,6 @@ class DebugFragment : Fragment() {
             }
 
             removeBtn.setOnClickListener {
-                // Gunakan requireContext()
                 AlertDialog.Builder(requireContext())
                     .setTitle("Hapus Latihan?")
                     .setMessage("Anda yakin ingin menghapus '${exercise["actionName"]}' dari daftar?")
@@ -204,7 +198,6 @@ class DebugFragment : Fragment() {
     }
 
     private fun setupStartButton() {
-        // Gunakan rootView.findViewById
         rootView.findViewById<Button>(R.id.startButton).setOnClickListener {
             if (plannedExercises.isNotEmpty()) {
                 if (allPermissionsGranted()) {
@@ -220,12 +213,10 @@ class DebugFragment : Fragment() {
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
-        // Gunakan requireContext()
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun requestPermissions() {
-        // Panggil requestPermissions dari Fragment
         requestPermissions(REQUIRED_PERMISSIONS, REQUEST_CAMERA_PERMISSION)
     }
 
@@ -246,16 +237,14 @@ class DebugFragment : Fragment() {
     }
 
     private fun startDetectActivity() {
-        // Gunakan requireContext() untuk Intent
         val intent = Intent(requireContext(), DetectActivity::class.java).apply {
-            val exercisesBundleList = ArrayList<Bundle>()
-            plannedExercises.forEach { exercise ->
-                val bundle = Bundle()
-                bundle.putString("actionName", exercise["actionName"] as String)
-                bundle.putInt("targetReps", exercise["targetReps"] as Int)
-                exercisesBundleList.add(bundle)
-            }
-            putParcelableArrayListExtra("plannedExercises", exercisesBundleList)
+            val exercisesParcelableList = plannedExercises.map { exercise ->
+                Bundle().apply {
+                    putString("actionName", exercise["actionName"] as String)
+                    putInt("targetReps", exercise["targetReps"] as Int)
+                }
+            } as ArrayList<out Parcelable> // Casting ke ArrayList<out Parcelable>
+            putParcelableArrayListExtra("plannedExercises", exercisesParcelableList)
             putExtra("maxDurationPerRep", maxDurationPerRep)
         }
         startActivity(intent)

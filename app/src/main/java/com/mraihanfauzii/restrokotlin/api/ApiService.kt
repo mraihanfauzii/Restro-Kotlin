@@ -1,78 +1,128 @@
 package com.mraihanfauzii.restrokotlin.api
 
-import com.google.gson.JsonElement
+import com.mraihanfauzii.restrokotlin.model.BadgeInfo
+import com.mraihanfauzii.restrokotlin.model.BadgesResponse
 import com.mraihanfauzii.restrokotlin.model.CalendarProgramsListResponse
 import com.mraihanfauzii.restrokotlin.model.DeleteResponse
 import com.mraihanfauzii.restrokotlin.model.DietPlanResponse
 import com.mraihanfauzii.restrokotlin.model.GeneralResponse
+import com.mraihanfauzii.restrokotlin.model.LeaderboardResponse
 import com.mraihanfauzii.restrokotlin.model.LoginRequest
 import com.mraihanfauzii.restrokotlin.model.LoginResponse
+import com.mraihanfauzii.restrokotlin.model.MyBadgesResponse
 import com.mraihanfauzii.restrokotlin.model.PatientProfileResponse
+import com.mraihanfauzii.restrokotlin.model.ProfilePictureUploadResponse
 import com.mraihanfauzii.restrokotlin.model.ProfileUpdateRequest
+import com.mraihanfauzii.restrokotlin.model.ProgramHistoryResponse
 import com.mraihanfauzii.restrokotlin.model.RegisterResponse
 import com.mraihanfauzii.restrokotlin.model.RegisterRequest
 import com.mraihanfauzii.restrokotlin.model.SingleProgramDetailResponse
+import com.mraihanfauzii.restrokotlin.model.TherapistListResponse
 import com.mraihanfauzii.restrokotlin.model.UpdateStatusProgramResponse
-import retrofit2.Call
+import okhttp3.MultipartBody
+import retrofit2.Response
+
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
     @POST("auth/pasien/register")
-    fun register (
+    suspend fun register (
         @Body registerRequest: RegisterRequest
-    ): Call<RegisterResponse>
+    ): RegisterResponse
 
     @POST("auth/pasien/login")
-    fun login (
+    suspend fun login (
         @Body loginRequest: LoginRequest
-    ): Call<LoginResponse>
+    ): LoginResponse
 
     @DELETE("auth/logout")
-    fun logout (
+    suspend fun logout (
         @Header("Authorization") token: String
-    ): Call<DeleteResponse>
+    ): DeleteResponse
 
     @GET("api/patient/profile")
-    fun getPatientProfile(
+    suspend fun getPatientProfile(
         @Header("Authorization") token: String
-    ): Call<PatientProfileResponse>
+    ): PatientProfileResponse
 
     @PUT("api/patient/profile")
-    fun updatePatientProfile(
+    suspend fun updatePatientProfile(
         @Header("Authorization") token: String,
         @Body request: ProfileUpdateRequest
-    ): Call<GeneralResponse>
+    ): GeneralResponse
 
     @GET("api/patient/diet-plan/{tanggal_str}")
-    fun getDietPlan(
+    suspend fun getDietPlan(
         @Header("Authorization") token: String,
         @Path("tanggal_str") date: String
-    ): Call<DietPlanResponse>
+    ): DietPlanResponse
 
     @GET("api/patient/calendar-programs")
-    fun getCalendarPrograms(
+    suspend fun getCalendarPrograms(
         @Header("Authorization") token: String,
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
-    ): Call<CalendarProgramsListResponse>
+    ): CalendarProgramsListResponse
 
     @GET("api/program/{program_id}")
-    fun getProgramDetail(
+    suspend fun getProgramDetail(
         @Header("Authorization") token: String,
         @Path("program_id") programId: Int
-    ): Call<SingleProgramDetailResponse>
+    ): SingleProgramDetailResponse
 
     @PUT("api/program/{program_id}/update-status")
-    fun updateProgramStatus(
+    suspend fun updateProgramStatus(
         @Header("Authorization") token: String,
         @Path("program_id") programId: Int,
         @Body requestBody: Map<String, String>
-    ): Call<UpdateStatusProgramResponse>
+    ): UpdateStatusProgramResponse
+
+    @GET("terapis/list-all-terapis")
+    suspend fun getAllTherapists(@Header("Authorization") token: String): TherapistListResponse
+
+    @Multipart
+    @POST("api/patient/profile/picture") // Gunakan POST atau PUT sesuai dokumentasi backend Anda
+    suspend fun uploadPatientProfilePicture(
+        @Header("Authorization") token: String,
+        @Part fotoProfil: MultipartBody.Part
+    ): ProfilePictureUploadResponse
+
+    @GET("api/gamification/leaderboard")
+    suspend fun getLeaderboard(
+        @Header("Authorization") token: String,
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<LeaderboardResponse>
+
+    @GET("api/gamification/badges")
+    suspend fun getAllBadges(
+        @Header("Authorization") token: String
+    ): Response<BadgesResponse>
+
+    @GET("api/gamification/badges/{badge_id}")
+    suspend fun getBadgeDetail(
+        @Header("Authorization") token: String,
+        @Path("badge_id") badgeId: Int
+    ): Response<BadgeInfo>
+
+    @GET("api/gamification/my-badges")
+    suspend fun getMyBadges(
+        @Header("Authorization") token: String
+    ): Response<MyBadgesResponse>
+
+    @GET("api/program/pasien/history")
+    suspend fun getProgramHistory(
+        @Header("Authorization") token: String,
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null
+    ): ProgramHistoryResponse
 }

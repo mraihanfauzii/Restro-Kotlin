@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/textViewMessageSent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_message_sent"
+        android:padding="12dp"
+        android:textColor="@android:color/white"
+        android:maxWidth="280dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Ini adalah pesan yang dikirim oleh pengguna saat ini." />
+
+    <TextView
+        android:id="@+id/textViewMessageTimeSent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:layout_marginTop="2dp"
+        android:textColor="@android:color/darker_gray"
+        app:layout_constraintEnd_toEndOf="@id/textViewMessageSent"
+        app:layout_constraintTop_toBottomOf="@id/textViewMessageSent"
+        tools:text="10:00" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

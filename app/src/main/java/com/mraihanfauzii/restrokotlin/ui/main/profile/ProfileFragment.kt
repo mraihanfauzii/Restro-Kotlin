@@ -1,5 +1,6 @@
 package com.mraihanfauzii.restrokotlin.ui.main.profile
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,8 +12,12 @@ import androidx.navigation.fragment.findNavController
 import com.mraihanfauzii.restrokotlin.R
 import com.mraihanfauzii.restrokotlin.databinding.FragmentProfileBinding
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
-import com.mraihanfauzii.restrokotlin.viewmodel.ProfileViewModel
 import com.bumptech.glide.Glide
+import com.mraihanfauzii.restrokotlin.api.ApiConfig
+import com.mraihanfauzii.restrokotlin.model.PatientProfileResponse
+import com.mraihanfauzii.restrokotlin.ui.OnBoardingActivity
+import com.mraihanfauzii.restrokotlin.viewmodel.ProfileViewModel
+import com.mraihanfauzii.restrokotlin.viewmodel.ProfileViewModelFactory
 
 class ProfileFragment : Fragment() {
 
@@ -34,25 +39,41 @@ class ProfileFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         authenticationManager = AuthenticationManager(requireContext())
-        profileViewModel = ViewModelProvider(requireActivity())[ProfileViewModel::class.java]
+        val apiService = ApiConfig.getApiService()
+        val factory = ProfileViewModelFactory(apiService)
+        profileViewModel = ViewModelProvider(requireActivity(), factory)[ProfileViewModel::class.java]
 
         setupListeners()
         observeViewModel()
+
+        displayCachedProfileData()
     }
 
     override fun onResume() {
         super.onResume()
-        // Panggil GET setiap kali ProfileFragment resume untuk memastikan data terbaru
         val token = authenticationManager.getAccess(AuthenticationManager.TOKEN)
         if (token != null) {
-            profileViewModel.getPatientProfile(token)
+            profileViewModel.needsRefresh.value?.let { needsRefresh ->
+                if (needsRefresh) {
+                    profileViewModel.getPatientProfile(token)
+                    profileViewModel.resetNeedsRefresh()
+                }
+            } ?: run {
+                if (profileViewModel.patientProfile.value == null) {
+                    profileViewModel.getPatientProfile(token)
+                }
+            }
         } else {
             Toast.makeText(requireContext(), "Token tidak ditemukan, silakan login ulang.", Toast.LENGTH_SHORT).show()
-            // TODO: Arahkan ke layar login jika token tidak ada
+            navigateToOnBoarding()
         }
     }
 
     private fun setupListeners() {
+        binding.cardGamification.setOnClickListener {
+            findNavController().navigate(R.id.action_profileFragment_to_gamificationFragment)
+        }
+
         binding.cardInfoAkun.setOnClickListener {
             findNavController().navigate(R.id.action_profileFragment_to_accountInfoFragment)
         }
@@ -66,39 +87,43 @@ class ProfileFragment : Fragment() {
         }
 
         binding.btnLogout.setOnClickListener {
-            // Implementasi logout Anda (panggil ViewModel autentikasi, hapus sesi, dll.)
-            // Contoh: authenticationManager.logOut()
-            // Setelah logout, arahkan ke layar OnBoarding/Login
-            // val intent = Intent(requireActivity(), OnBoardingActivity::class.java)
-            // intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            // startActivity(intent)
-            // requireActivity().finish()
-            Toast.makeText(requireContext(), "Logout clicked! (Implementasi pending)", Toast.LENGTH_SHORT).show()
+            performLogout()
+        }
+    }
+
+    private fun performLogout() {
+        authenticationManager.logOut()
+        Toast.makeText(requireContext(), "Berhasil keluar.", Toast.LENGTH_SHORT).show()
+        navigateToOnBoarding()
+    }
+
+    private fun navigateToOnBoarding() {
+        val intent = Intent(requireActivity(), OnBoardingActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        requireActivity().finish()
+    }
+
+    private fun displayCachedProfileData() {
+        val cachedProfile = authenticationManager.getCachedPatientProfile()
+        cachedProfile?.let {
+            updateProfileUI(it)
+        } ?: run {
+            binding.tvProfileName.text = "Memuat..."
+            binding.tvProfileUsername.text = "Memuat..."
+            binding.ivProfileAvatar.setImageResource(R.drawable.baseline_person_24)
         }
     }
 
     private fun observeViewModel() {
         profileViewModel.patientProfile.observe(viewLifecycleOwner) { profile ->
             profile?.let {
-                binding.tvProfileName.text = it.fullName ?: "Muhammad Raihan Fauzi"
-                binding.tvProfileUsername.text = it.username ?: "mraihanf"
-
-                // Muat gambar profil jika URL tersedia
-                if (!it.profilePictureUrl.isNullOrEmpty()) {
-                    Glide.with(this)
-                        .load(it.profilePictureUrl)
-                        .placeholder(R.drawable.baseline_person_24) // Gambar placeholder
-                        .error(R.drawable.baseline_error_24) // Gambar error
-                        .into(binding.ivProfileAvatar)
-                } else {
-                    binding.ivProfileAvatar.setImageResource(R.drawable.baseline_person_24)
-                }
+                authenticationManager.updateProfileData(it)
+                updateProfileUI(it)
             }
         }
 
         profileViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            // Tampilkan/sembunyikan indikator loading di ProfileFragment jika ada
-            // Misalnya, ProgressBar di atas ImageView atau di tengah layout
         }
 
         profileViewModel.errorMessage.observe(viewLifecycleOwner) { errorMessage ->
@@ -106,6 +131,27 @@ class ProfileFragment : Fragment() {
                 Toast.makeText(requireContext(), it, Toast.LENGTH_SHORT).show()
                 profileViewModel.clearErrorMessage()
             }
+        }
+
+        profileViewModel.profileUpdated.observe(viewLifecycleOwner) { updatedProfile ->
+            updatedProfile?.let {
+                updateProfileUI(it)
+            }
+        }
+    }
+
+    private fun updateProfileUI(profile: PatientProfileResponse) {
+        binding.tvProfileName.text = profile.fullName ?: "Nama Lengkap"
+        binding.tvProfileUsername.text = profile.username ?: "username"
+
+        if (!profile.profilePictureUrl.isNullOrEmpty()) {
+            Glide.with(this)
+                .load(profile.profilePictureUrl)
+                .placeholder(R.drawable.baseline_person_24)
+                .error(R.drawable.baseline_error_24)
+                .into(binding.ivProfileAvatar)
+        } else {
+            binding.ivProfileAvatar.setImageResource(R.drawable.baseline_person_24)
         }
     }
 

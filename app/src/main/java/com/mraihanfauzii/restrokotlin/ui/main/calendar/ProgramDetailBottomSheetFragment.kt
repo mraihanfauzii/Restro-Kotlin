@@ -2,17 +2,20 @@ package com.mraihanfauzii.restrokotlin.ui.main.calendar
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
+import androidx.navigation.findNavController
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.mraihanfauzii.restrokotlin.R
-import com.mraihanfauzii.restrokotlin.databinding.FragmentProgramDetailBottomSheetBinding // Sesuaikan dengan nama layout Anda
+import com.mraihanfauzii.restrokotlin.databinding.FragmentProgramDetailBottomSheetBinding
 import com.mraihanfauzii.restrokotlin.model.CalendarProgramResponse
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
 import com.mraihanfauzii.restrokotlin.viewmodel.ProgramDetailViewModel
+import android.os.Parcelable
 
 class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
 
@@ -82,15 +85,13 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
                 setupActionButton(it)
             } ?: run {
                 // Jika program null (misal: gagal diambil dari API)
-                // Toast.makeText(requireContext(), "Gagal memuat detail program.", Toast.LENGTH_SHORT).show()
-                // dismiss() // Opsional: tutup jika gagal total
+                Toast.makeText(requireContext(), "Gagal memuat detail program.", Toast.LENGTH_SHORT).show()
             }
         }
 
         programDetailViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             binding.progressBarDetail.visibility = if (isLoading) View.VISIBLE else View.GONE
             binding.btnActionProgram.isEnabled = !isLoading
-            // Anda bisa mengatur alpha atau disable view lain saat loading
             binding.tvDetailJenisProgram.alpha = if (isLoading) 0.5f else 1.0f
             binding.tvDetailCatatanTerapis.alpha = if (isLoading) 0.5f else 1.0f
             binding.tvDetailTerapis.alpha = if (isLoading) 0.5f else 1.0f
@@ -117,8 +118,8 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
     private fun displayProgramDetails(program: CalendarProgramResponse) {
         binding.tvDetailJenisProgram.text = program.programName ?: "-"
         binding.tvDetailCatatanTerapis.text = program.therapistNotes ?: "-"
-        binding.tvDetailTerapis.text = program.therapist?.fullName ?: "-" // Ambil dari objek terapis
-        binding.tvDetailStatusProgram.text = program.status?.replace("_", " ")?.capitalize() ?: "-" // Tampilkan status
+        binding.tvDetailTerapis.text = program.therapist?.fullName ?: "-"
+        binding.tvDetailStatusProgram.text = program.status?.replace("_", " ")?.capitalize() ?: "-"
     }
 
     private fun setupActionButton(program: CalendarProgramResponse) {
@@ -137,18 +138,39 @@ class ProgramDetailBottomSheetFragment : BottomSheetDialogFragment() {
                     text = "Lanjutkan Program"
                     visibility = View.VISIBLE
                     setOnClickListener {
-                        // TODO: Implementasi logika untuk melanjutkan program.
-                        // Mungkin navigasi ke layar aktivitas program atau detail lainnya.
-                        Toast.makeText(requireContext(), "Mengarahkan ke halaman program berjalan...", Toast.LENGTH_SHORT).show()
-                        dismiss()
+                        val plannedBundles = program.plannedMovements?.map { m ->
+                            Bundle().apply {
+                                putString("actionName",  m.movementName)
+                                putInt   ("targetReps",  m.jumlahRepetisiDirencanakan ?: 1)
+                            }
+                        } ?: emptyList()
+
+                        val maxDuration = program.plannedMovements?.firstOrNull()?.durationSeconds ?: 20
+
+                        if (plannedBundles.isNotEmpty()) {
+                            val navBundle = Bundle().apply {
+                                putParcelableArray("plannedExercises", plannedBundles.toTypedArray())
+                                putInt   ("maxDurationPerRep", maxDuration)
+                                putString("programName", program.programName)
+                                putInt   ("programId",   program.id ?: -1)
+                            }
+                            Log.d(TAG, "Navigating with array: $plannedBundles, maxDur=$maxDuration")
+                            requireActivity()
+                                .findNavController(R.id.activityMainNavHostFragment)
+                                .navigate(R.id.action_calendarFragment_to_detectActivity, navBundle)
+                            dismiss()
+                        } else {
+                            Toast.makeText(requireContext(),
+                                "Tidak ada gerakan yang direncanakan.", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
             }
             "selesai", "dibatalkan" -> {
-                binding.btnActionProgram.visibility = View.GONE // Sembunyikan tombol
+                binding.btnActionProgram.visibility = View.GONE
             }
             else -> {
-                binding.btnActionProgram.visibility = View.GONE // Status tidak dikenal, sembunyikan
+                binding.btnActionProgram.visibility = View.GONE
             }
         }
     }

@@ -12,6 +12,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.findNavController
 import com.mraihanfauzii.restrokotlin.R
 import com.mraihanfauzii.restrokotlin.databinding.FragmentHomeBinding
+import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager // Import ini
 
 class HomeFragment : Fragment() {
 
@@ -19,14 +20,20 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var authenticationManager: AuthenticationManager
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.entries.all { it.value }
         if (allGranted) {
-            Toast.makeText(requireContext(), "Izin kamera diberikan.", Toast.LENGTH_SHORT).show()
+            if (!authenticationManager.isCameraPermissionToastShown()) {
+                Toast.makeText(requireContext(), "Izin kamera diberikan.", Toast.LENGTH_SHORT).show()
+                authenticationManager.setCameraPermissionToastShown(true)
+            }
         } else {
             Toast.makeText(requireContext(), "Izin kamera ditolak. Beberapa fitur mungkin tidak berfungsi.", Toast.LENGTH_LONG).show()
+            authenticationManager.setCameraPermissionToastShown(false)
         }
     }
 
@@ -34,13 +41,13 @@ class HomeFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        authenticationManager = AuthenticationManager(requireContext())
         checkAndRequestPermissions()
 
         binding.btnLanjutkanProgram.setOnClickListener {
@@ -52,12 +59,19 @@ class HomeFragment : Fragment() {
         if (!allPermissionsGranted()) {
             requestPermissionLauncher.launch(REQUIRED_PERMISSIONS)
         } else {
-            // Izin sudah diberikan
-            Toast.makeText(requireContext(), "Izin kamera sudah diberikan.", Toast.LENGTH_SHORT).show()
+            if (!authenticationManager.isCameraPermissionToastShown()) {
+                Toast.makeText(requireContext(), "Izin kamera sudah diberikan.", Toast.LENGTH_SHORT).show()
+                authenticationManager.setCameraPermissionToastShown(true)
+            }
         }
     }
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(requireContext(), it) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
     }
 }

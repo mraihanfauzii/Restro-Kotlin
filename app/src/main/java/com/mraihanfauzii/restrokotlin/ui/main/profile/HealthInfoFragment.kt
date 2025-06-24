@@ -15,6 +15,8 @@ import com.mraihanfauzii.restrokotlin.databinding.FragmentHealthInfoBinding
 import com.mraihanfauzii.restrokotlin.model.HealthInfoRequest
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
 import com.mraihanfauzii.restrokotlin.viewmodel.ProfileViewModel
+import com.mraihanfauzii.restrokotlin.api.ApiConfig // Import ApiConfig
+import com.mraihanfauzii.restrokotlin.viewmodel.ProfileViewModelFactory // Import ProfileViewModelFactory
 
 class HealthInfoFragment : Fragment() {
 
@@ -36,7 +38,10 @@ class HealthInfoFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         authenticationManager = AuthenticationManager(requireContext())
-        profileViewModel = ViewModelProvider(requireActivity())[ProfileViewModel::class.java]
+        // Menggunakan ProfileViewModelFactory untuk menginisialisasi ProfileViewModel
+        val apiService = ApiConfig.getApiService()
+        val factory = ProfileViewModelFactory(apiService)
+        profileViewModel = ViewModelProvider(requireActivity(), factory)[ProfileViewModel::class.java]
 
         setupDropdowns()
         setupListeners()
@@ -79,6 +84,12 @@ class HealthInfoFragment : Fragment() {
         profileViewModel.isUpdateSuccess.observe(viewLifecycleOwner) { isSuccess ->
             if (isSuccess) {
                 Toast.makeText(requireContext(), "Informasi Kesehatan berhasil diperbarui", Toast.LENGTH_SHORT).show()
+                val updatedProfile = profileViewModel.patientProfile.value
+                updatedProfile?.let {
+                    authenticationManager.updateProfileData(it)
+                    profileViewModel.setProfileUpdated(it)
+                    profileViewModel.resetNeedsRefresh()
+                }
                 findNavController().popBackStack()
                 profileViewModel.resetUpdateStatus()
             }

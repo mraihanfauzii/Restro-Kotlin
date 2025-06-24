@@ -4,11 +4,12 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.mraihanfauzii.restrokotlin.api.ApiConfig
 import com.mraihanfauzii.restrokotlin.model.DietPlanResponse
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.launch
+import retrofit2.HttpException
+import org.json.JSONObject
 
 class FoodViewModel : ViewModel() {
 
@@ -28,30 +29,40 @@ class FoodViewModel : ViewModel() {
     fun getDietPlan(token: String, date: String) {
         _isLoading.value = true
         _errorMessage.value = null
-        _dietPlan.value = null // Reset data sebelumnya
+        _dietPlan.value = null
 
-        ApiConfig.getApiService().getDietPlan("Bearer $token", date).enqueue(object : Callback<DietPlanResponse> {
-            override fun onResponse(
-                call: Call<DietPlanResponse>,
-                response: Response<DietPlanResponse>
-            ) {
-                _isLoading.value = false
-                if (response.isSuccessful) {
-                    _dietPlan.value = response.body()
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    val errorMessage = "Gagal mengambil rencana pola makan: ${response.message()}"
-                    Log.e("FoodViewModel", "$errorMessage - $errorBody")
-                    _errorMessage.value = errorMessage
+        viewModelScope.launch {
+            try {
+                val response = ApiConfig.getApiService().getDietPlan("Bearer $token", date)
+                _dietPlan.value = response
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val statusCode = e.code()
+                Log.e("FoodViewModel", "HTTP Error for Diet Plan ($statusCode): $errorBody")
+
+                when (statusCode) {
+                    404 -> {
+                        try {
+                            val jsonError = JSONObject(errorBody)
+                            val msg = jsonError.optString("msg", "Tidak ada rencana pola makan untuk tanggal ini.")
+                            _errorMessage.value = msg
+                        } catch (jsonException: Exception) {
+                            _errorMessage.value = "Tidak ada rencana pola makan untuk tanggal ini."
+                        }
+                    }
+                    401 -> {
+                        _errorMessage.value = "Sesi Anda telah berakhir, silakan login ulang."
+                    }
+                    else -> {
+                        _errorMessage.value = "Terjadi kesalahan saat mengambil rencana pola makan. Silakan coba lagi."
+                    }
                 }
-            }
-
-            override fun onFailure(call: Call<DietPlanResponse>, t: Throwable) {
+            } catch (e: Exception) {
+                Log.e("FoodViewModel", "GET Diet Plan Error: ${e.message}", e)
+                _errorMessage.value = "Koneksi gagal atau terjadi kesalahan tak terduga."
+            } finally {
                 _isLoading.value = false
-                val errorMessage = "Koneksi gagal: ${t.message.toString()}"
-                Log.e("FoodViewModel", "GET Diet Plan Error: $errorMessage")
-                _errorMessage.value = errorMessage
             }
-        })
+        }
     }
 }

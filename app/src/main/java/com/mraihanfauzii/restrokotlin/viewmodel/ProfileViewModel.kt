@@ -1,16 +1,22 @@
 package com.mraihanfauzii.restrokotlin.viewmodel
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.mraihanfauzii.restrokotlin.api.ApiConfig
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.mraihanfauzii.restrokotlin.api.ApiService
 import com.mraihanfauzii.restrokotlin.model.*
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
+import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import retrofit2.HttpException
+import java.io.File
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(private val apiService: ApiService) : ViewModel() {
 
     private val _patientProfile = MutableLiveData<PatientProfileResponse?>()
     val patientProfile: LiveData<PatientProfileResponse?> = _patientProfile
@@ -24,57 +30,70 @@ class ProfileViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
 
+    private val _needsRefresh = MutableLiveData<Boolean>()
+    val needsRefresh: LiveData<Boolean> get() = _needsRefresh
+
+    private val _profileUpdated = MutableLiveData<PatientProfileResponse?>()
+    val profileUpdated: LiveData<PatientProfileResponse?> get() = _profileUpdated
+
+    private val _isImageUploadSuccess = MutableLiveData<Boolean>()
+    val isImageUploadSuccess: LiveData<Boolean> = _isImageUploadSuccess
+
+    private val _imageUploadMessage = MutableLiveData<String?>()
+    val imageUploadMessage: LiveData<String?> = _imageUploadMessage
+
     fun resetUpdateStatus() {
         _isUpdateSuccess.value = false
+        _isImageUploadSuccess.value = false
     }
 
     fun clearErrorMessage() {
         _errorMessage.value = null
+        _imageUploadMessage.value = null
+    }
+
+    fun resetNeedsRefresh() {
+        _needsRefresh.value = false
+    }
+
+    fun setProfileUpdated(profile: PatientProfileResponse) {
+        _profileUpdated.value = profile
     }
 
     fun getPatientProfile(token: String) {
         _isLoading.value = true
         _errorMessage.value = null
 
-        ApiConfig.getApiService().getPatientProfile("Bearer $token").enqueue(object : Callback<PatientProfileResponse> {
-            override fun onResponse(
-                call: Call<PatientProfileResponse>,
-                response: Response<PatientProfileResponse>
-            ) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.getPatientProfile("Bearer $token")
+                _patientProfile.value = response
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val errorMessage = "GET Profile Failed: ${e.code()} - ${e.message()} - $errorBody"
+                Log.e("ProfileViewModel", errorMessage)
+                _errorMessage.value = "Gagal mengambil data profil: ${e.message()}"
+            } catch (e: Exception) {
+                val errorMessage = "GET Profile Error: ${e.message.toString()}"
+                Log.e("ProfileViewModel", errorMessage)
+                _errorMessage.value = "Koneksi gagal: ${e.message}"
+            } finally {
                 _isLoading.value = false
-                if (response.isSuccessful) {
-                    _patientProfile.value = response.body()
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("ProfileViewModel", "GET Profile Failed: ${response.message()} - $errorBody")
-                    _errorMessage.value = "Gagal mengambil data profil: ${response.message()}"
-                }
             }
-
-            override fun onFailure(call: Call<PatientProfileResponse>, t: Throwable) {
-                _isLoading.value = false
-                Log.e("ProfileViewModel", "GET Profile Error: ${t.message.toString()}")
-                _errorMessage.value = "Koneksi gagal: ${t.message}"
-            }
-        })
+        }
     }
 
-    // Fungsi untuk memperbarui informasi akun
     fun updateAccountInfo(token: String, request: AccountInfoRequest) {
         _isLoading.value = true
         _isUpdateSuccess.value = false
         _errorMessage.value = null
 
-        // Buat ProfileUpdateRequest hanya dengan field yang relevan untuk akun
-        // Ambil data profile yang sudah ada agar tidak menimpa field lain yang tidak diupdate
         val currentProfile = _patientProfile.value
 
         val updateRequest = ProfileUpdateRequest(
             username = request.username,
             email = request.email,
             phoneNumber = request.phoneNumber,
-            // Sertakan field lain dari currentProfile agar tidak di-null-kan oleh PUT
-            // jika backend Anda membutuhkan semua field atau akan mengeset null jika tidak ada
             address = currentProfile?.address,
             weight = currentProfile?.weight,
             bloodType = currentProfile?.bloodType,
@@ -85,37 +104,34 @@ class ProfileViewModel : ViewModel() {
             medicalHistory = currentProfile?.medicalHistory,
             dateOfBirth = currentProfile?.dateOfBirth,
             placeOfBirth = currentProfile?.placeOfBirth,
-            height = currentProfile?.height,
+            height = currentProfile?.height
         )
 
-        ApiConfig.getApiService().updatePatientProfile("Bearer $token", updateRequest).enqueue(object : Callback<GeneralResponse> {
-            override fun onResponse(
-                call: Call<GeneralResponse>,
-                response: Response<GeneralResponse>
-            ) {
-                _isLoading.value = false
-                if (response.isSuccessful) {
-                    _isUpdateSuccess.value = true
-                    _errorMessage.value = null
-                    getPatientProfile(token)
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("ProfileViewModel", "Update Account Info Failed: ${response.code()} - ${response.message()} - $errorBody")
-                    _isUpdateSuccess.value = false
-                    _errorMessage.value = "Gagal memperbarui informasi akun: ${response.message()}"
-                }
-            }
-
-            override fun onFailure(call: Call<GeneralResponse>, t: Throwable) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.updatePatientProfile("Bearer $token", updateRequest)
+                _isUpdateSuccess.value = true
+                _errorMessage.value = null
+                getPatientProfile(token)
+                _needsRefresh.value = true
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val errorMessage = "Update Account Info Failed: ${e.code()} - ${e.message()} - $errorBody"
+                Log.e("ProfileViewModel", errorMessage)
+                _isUpdateSuccess.value = false
+                _errorMessage.value = "Gagal memperbarui informasi akun: ${e.message()}"
+            } catch (e: Exception) {
+                val errorMessage = "Update Account Info Error: ${e.message.toString()}"
+                Log.e("ProfileViewModel", errorMessage)
                 _isLoading.value = false
                 _isUpdateSuccess.value = false
-                Log.e("ProfileViewModel", "Update Account Info Error: ${t.message.toString()}")
-                _errorMessage.value = "Koneksi gagal: ${t.message}"
+                _errorMessage.value = "Koneksi gagal: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-        })
+        }
     }
 
-    // Fungsi untuk memperbarui informasi pasien
     fun updatePatientInfo(token: String, request: PatientInfoRequest) {
         _isLoading.value = true
         _isUpdateSuccess.value = false
@@ -130,7 +146,6 @@ class ProfileViewModel : ViewModel() {
             placeOfBirth = request.placeOfBirth,
             address = request.address,
             companionName = request.companionName,
-            // Sertakan field lain dari currentProfile
             username = currentProfile?.username,
             email = currentProfile?.email,
             phoneNumber = currentProfile?.phoneNumber,
@@ -138,37 +153,34 @@ class ProfileViewModel : ViewModel() {
             bloodType = currentProfile?.bloodType,
             allergyHistory = currentProfile?.allergyHistory,
             medicalHistory = currentProfile?.medicalHistory,
-            height = currentProfile?.height,
+            height = currentProfile?.height
         )
 
-        ApiConfig.getApiService().updatePatientProfile("Bearer $token", updateRequest).enqueue(object : Callback<GeneralResponse> {
-            override fun onResponse(
-                call: Call<GeneralResponse>,
-                response: Response<GeneralResponse>
-            ) {
-                _isLoading.value = false
-                if (response.isSuccessful) {
-                    _isUpdateSuccess.value = true
-                    _errorMessage.value = null
-                    getPatientProfile(token)
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("ProfileViewModel", "Update Patient Info Failed: ${response.code()} - ${response.message()} - $errorBody")
-                    _isUpdateSuccess.value = false
-                    _errorMessage.value = "Gagal memperbarui informasi pasien: ${response.message()}"
-                }
-            }
-
-            override fun onFailure(call: Call<GeneralResponse>, t: Throwable) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.updatePatientProfile("Bearer $token", updateRequest)
+                _isUpdateSuccess.value = true
+                _errorMessage.value = null
+                getPatientProfile(token)
+                _needsRefresh.value = true
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val errorMessage = "Update Patient Info Failed: ${e.code()} - ${e.message()} - $errorBody"
+                Log.e("ProfileViewModel", errorMessage)
+                _isUpdateSuccess.value = false
+                _errorMessage.value = "Gagal memperbarui informasi pasien: ${e.message()}"
+            } catch (e: Exception) {
+                val errorMessage = "Update Patient Info Error: ${e.message.toString()}"
+                Log.e("ProfileViewModel", errorMessage)
                 _isLoading.value = false
                 _isUpdateSuccess.value = false
-                Log.e("ProfileViewModel", "Update Patient Info Error: ${t.message.toString()}")
-                _errorMessage.value = "Koneksi gagal: ${t.message}"
+                _errorMessage.value = "Koneksi gagal: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-        })
+        }
     }
 
-    // Fungsi untuk memperbarui informasi kesehatan
     fun updateHealthInfo(token: String, request: HealthInfoRequest) {
         _isLoading.value = true
         _isUpdateSuccess.value = false
@@ -182,7 +194,6 @@ class ProfileViewModel : ViewModel() {
             bloodType = request.bloodType,
             medicalHistory = request.medicalHistory,
             allergyHistory = request.allergyHistory,
-            // Sertakan field lain dari currentProfile
             username = currentProfile?.username,
             email = currentProfile?.email,
             phoneNumber = currentProfile?.phoneNumber,
@@ -191,33 +202,73 @@ class ProfileViewModel : ViewModel() {
             fullName = currentProfile?.fullName,
             companionName = currentProfile?.companionName,
             dateOfBirth = currentProfile?.dateOfBirth,
-            placeOfBirth = currentProfile?.placeOfBirth,
+            placeOfBirth = currentProfile?.placeOfBirth
         )
 
-        ApiConfig.getApiService().updatePatientProfile("Bearer $token", updateRequest).enqueue(object : Callback<GeneralResponse> {
-            override fun onResponse(
-                call: Call<GeneralResponse>,
-                response: Response<GeneralResponse>
-            ) {
-                _isLoading.value = false
-                if (response.isSuccessful) {
-                    _isUpdateSuccess.value = true
-                    _errorMessage.value = null
-                    getPatientProfile(token)
-                } else {
-                    val errorBody = response.errorBody()?.string()
-                    Log.e("ProfileViewModel", "Update Health Info Failed: ${response.code()} - ${response.message()} - $errorBody")
-                    _isUpdateSuccess.value = false
-                    _errorMessage.value = "Gagal memperbarui informasi kesehatan: ${response.message()}"
-                }
-            }
-
-            override fun onFailure(call: Call<GeneralResponse>, t: Throwable) {
+        viewModelScope.launch {
+            try {
+                val response = apiService.updatePatientProfile("Bearer $token", updateRequest)
+                _isUpdateSuccess.value = true
+                _errorMessage.value = null
+                getPatientProfile(token)
+                _needsRefresh.value = true
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val errorMessage = "Update Health Info Failed: ${e.code()} - ${e.message()} - $errorBody"
+                Log.e("ProfileViewModel", errorMessage)
+                _isUpdateSuccess.value = false
+                _errorMessage.value = "Gagal memperbarui informasi kesehatan: ${e.message()}"
+            } catch (e: Exception) {
+                val errorMessage = "Update Health Info Error: ${e.message.toString()}"
+                Log.e("ProfileViewModel", errorMessage)
                 _isLoading.value = false
                 _isUpdateSuccess.value = false
-                Log.e("ProfileViewModel", "Update Health Info Error: ${t.message.toString()}")
-                _errorMessage.value = "Koneksi gagal: ${t.message}"
+                _errorMessage.value = "Koneksi gagal: ${e.message}"
+            } finally {
+                _isLoading.value = false
             }
-        })
+        }
+    }
+
+    fun uploadProfilePicture(token: String, imageFile: File) {
+        _isLoading.value = true
+        _isImageUploadSuccess.value = false
+        _imageUploadMessage.value = null
+
+        val requestImageFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
+        val multipartBody = MultipartBody.Part.createFormData("foto_profil", imageFile.name, requestImageFile)
+
+        viewModelScope.launch {
+            try {
+                val response = apiService.uploadPatientProfilePicture("Bearer $token", multipartBody)
+                _isImageUploadSuccess.value = true
+                _imageUploadMessage.value = response.msg
+                getPatientProfile(token)
+                _needsRefresh.value = true
+            } catch (e: HttpException) {
+                val errorBody = e.response()?.errorBody()?.string()
+                val errorMessage = "Upload Profile Picture Failed: ${e.code()} - ${e.message()} - $errorBody"
+                Log.e("ProfileViewModel", errorMessage)
+                _isImageUploadSuccess.value = false
+                _imageUploadMessage.value = "Gagal mengunggah foto profil: ${e.message()}"
+            } catch (e: Exception) {
+                val errorMessage = "Upload Profile Picture Error: ${e.message.toString()}"
+                Log.e("ProfileViewModel", errorMessage)
+                _isImageUploadSuccess.value = false
+                _imageUploadMessage.value = "Koneksi gagal saat mengunggah foto: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+}
+
+class ProfileViewModelFactory(private val apiService: ApiService) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProfileViewModel(apiService) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -1,24 +1,42 @@
 package com.mraihanfauzii.restrokotlin.model
 
+import android.os.Parcelable
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ServerTimestamp
 import com.google.gson.annotations.SerializedName
+import kotlinx.parcelize.Parcelize
 import java.util.Date
 
+@Entity(tableName = "chatbot_messages")
 data class MessageChatBot(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0, // Primary key untuk Room
     val text: String,
     val isUser: Boolean, // True jika pesan dari user, False jika dari bot
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isThinking: Boolean = false // Tambahan untuk UI loading state
 )
 
+@Parcelize
+data class ChatContact(
+    val therapistFirebaseUid: String,
+    val therapistName: String,
+    val lastMessage: String?,
+    val lastMessageTimestamp: Date?
+) : Parcelable
+
 data class MessageTerapis(
-    val id: String = "",
-    val senderId: String = "",
-    val receiverId: String = "",
-    val text: String = "",
-    val timestamp: Date? = null,
-    val senderName: String? = null
+    var id: String = "",
+    var senderId: String = "",
+    var senderName: String = "",
+    var text: String = "",
+    @ServerTimestamp
+    var timestamp: Timestamp? = null,
+    var type: String = "text"
 ) {
-    // Konstruktor tanpa argumen diperlukan untuk deserialisasi Firestore
-    constructor() : this("", "", "", "", null, null)
+    constructor() : this("", "", "", "", null, "")
 }
 
 // Data classes untuk Direct Line API (sesuaikan jika ada perubahan API di masa mendatang)

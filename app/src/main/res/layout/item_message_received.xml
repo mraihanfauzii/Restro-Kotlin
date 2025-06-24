@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/textViewSenderName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="?android:attr/textColorPrimary"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:text="Nama Terapis"
+        android:layout_marginBottom="2dp"/>
+
+    <TextView
+        android:id="@+id/textViewMessageReceived"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_message_received"
+        android:padding="12dp"
+        android:textColor="?android:attr/textColorPrimary"
+        android:maxWidth="280dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/textViewSenderName"
+        tools:text="Ini adalah pesan yang diterima dari pengguna lain." />
+
+    <TextView
+        android:id="@+id/textViewMessageTimeReceived"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="10sp"
+        android:layout_marginTop="2dp"
+        android:textColor="@android:color/darker_gray"
+        app:layout_constraintStart_toStartOf="@id/textViewMessageReceived"
+        app:layout_constraintTop_toBottomOf="@id/textViewMessageReceived"
+        tools:text="10:05" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

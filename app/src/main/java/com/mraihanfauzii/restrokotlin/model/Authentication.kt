@@ -30,9 +30,32 @@ data class LoginRequest(
 data class LoginResponse(
     @field:SerializedName("access_token")
     val accessToken: String,
+    @field:SerializedName("firebase_client_config")
+    val firebaseClientConfig: FirebaseClientConfig,
+    @field:SerializedName("firebase_custom_token")
+    val firebaseCustomToken: String,
     @field:SerializedName("user")
     val user: User
 ) : Parcelable
+
+@Parcelize
+data class FirebaseClientConfig(
+    @field:SerializedName("apiKey")
+    val apiKey: String,
+    @field:SerializedName("appId")
+    val appId: String,
+    @field:SerializedName("authDomain")
+    val authDomain: String,
+    @field:SerializedName("measurementId")
+    val measurementId: String,
+    @field:SerializedName("messagingSenderId")
+    val messagingSenderId: String,
+    @field:SerializedName("projectId")
+    val projectId: String,
+    @field:SerializedName("storageBucket")
+    val storageBucket: String
+) : Parcelable
+
 
 @Parcelize
 data class User(
@@ -45,5 +68,7 @@ data class User(
     @field:SerializedName("role")
     val role: String,
     @field:SerializedName("username")
-    val username: String
+    val username: String,
+    @field:SerializedName("total_points")
+    val totalPoints: Int = 0
 ) : Parcelable

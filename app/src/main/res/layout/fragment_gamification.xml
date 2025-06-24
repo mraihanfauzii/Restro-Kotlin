@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ui.main.profile.GamificationFragment">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_leaderboard_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Leaderboard Pasien"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_leaderboard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tv_leaderboard_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:listitem="@layout/item_leaderboard" />
+
+        <TextView
+            android:id="@+id/tv_no_leaderboard_data"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tidak ada data leaderboard."
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/rv_leaderboard"
+            app:layout_constraintStart_toStartOf="@id/rv_leaderboard"
+            app:layout_constraintEnd_toEndOf="@id/rv_leaderboard"
+            app:layout_constraintBottom_toBottomOf="@id/rv_leaderboard" />
+
+        <TextView
+            android:id="@+id/tv_my_badges_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Badge Saya"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/rv_leaderboard" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_my_badges"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tv_my_badges_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:listitem="@layout/item_my_badge" />
+
+        <TextView
+            android:id="@+id/tv_no_my_badges_data"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Anda belum mendapatkan badge."
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/rv_my_badges"
+            app:layout_constraintStart_toStartOf="@id/rv_my_badges"
+            app:layout_constraintEnd_toEndOf="@id/rv_my_badges"
+            app:layout_constraintBottom_toBottomOf="@id/rv_my_badges" />
+
+        <TextView
+            android:id="@+id/tv_all_badges_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Semua Badge Tersedia"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@android:color/black"
+            android:layout_marginTop="16dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/rv_my_badges" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_all_badges"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:layout_constraintTop_toBottomOf="@id/tv_all_badges_title"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:listitem="@layout/item_all_badge" />
+
+        <TextView
+            android:id="@+id/tv_no_all_badges_data"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tidak ada badge yang tersedia."
+            android:visibility="gone"
+            app:layout_constraintTop_toTopOf="@id/rv_all_badges"
+            app:layout_constraintStart_toStartOf="@id/rv_all_badges"
+            app:layout_constraintEnd_toEndOf="@id/rv_all_badges"
+            app:layout_constraintBottom_toBottomOf="@id/rv_all_badges" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            style="?android:attr/progressBarStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</ScrollView>

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.mraihanfauzii.restrokotlin.databinding.ActivityRegisterBinding
 import com.mraihanfauzii.restrokotlin.model.RegisterRequest
@@ -21,14 +20,24 @@ class RegisterActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         authenticationViewModel = ViewModelProvider(this)[AuthenticationViewModel::class.java]
-        authenticationViewModel.isLoading.observe(this@RegisterActivity) { loading ->
+
+        authenticationViewModel.isLoading.observe(this) { loading ->
             showLoading(loading)
         }
-        authenticationViewModel.errorMessage.observe(this, Observer { errorMessage ->
+
+        authenticationViewModel.errorMessage.observe(this) { errorMessage ->
             if (errorMessage != null) {
                 Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show()
+                authenticationViewModel.clearErrorMessage()
             }
-        })
+        }
+
+        authenticationViewModel.isRegisterSuccess.observe(this) { isSuccess ->
+            if (isSuccess) {
+                Toast.makeText(this, "Successfully register", Toast.LENGTH_SHORT).show()
+                navigateToLoginActivity()
+            }
+        }
 
         binding.apply {
             btnLogin.setOnClickListener {
@@ -51,27 +60,17 @@ class RegisterActivity : AppCompatActivity() {
                 )
                 if (passwordConf == password) {
                     if (email.isNotEmpty() && password.isNotEmpty() && username.isNotEmpty() && fullName.isNotEmpty() && passwordConf.isNotEmpty()) {
-                        authenticationViewModel.register(registerRequest)
-                        register(authenticationViewModel)
-                    } else if(email.isEmpty() || password.isEmpty() || fullName.isEmpty() || passwordConf.isEmpty()) {
+                        if (password.length >= 8) {
+                            authenticationViewModel.register(registerRequest)
+                        } else {
+                            Toast.makeText(this@RegisterActivity, "Password tidak boleh kurang dari 8 karakter!", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
                         Toast.makeText(this@RegisterActivity, "Semua inputan harus diisi!", Toast.LENGTH_SHORT).show()
                     }
-                } else if (password.length < 8 || passwordConf.length < 8)
-                    Toast.makeText(this@RegisterActivity, "Password tidak boleh kurang dari 8 karakter!", Toast.LENGTH_SHORT).show()
-                else {
+                } else {
                     Toast.makeText(this@RegisterActivity, "Kata sandi konfirmasi harus sama dengan kata sandi!", Toast.LENGTH_SHORT).show()
                 }
-            }
-        }
-    }
-
-    private fun register(authenticationViewModel: AuthenticationViewModel) {
-        authenticationViewModel.isRegisterSuccess.observe(this@RegisterActivity) {  isSuccess ->
-            if(isSuccess) {
-                Toast.makeText(this@RegisterActivity, "Successfully register", Toast.LENGTH_SHORT).show()
-                navigateToLoginActivity()
-            } else{
-                Toast.makeText(this@RegisterActivity, "Failed to register", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -80,6 +79,7 @@ class RegisterActivity : AppCompatActivity() {
         val intent = Intent(this@RegisterActivity, LoginActivity::class.java)
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
+        finish() // Selesaikan RegisterActivity setelah navigasi
     }
 
     private fun showLoading(state: Boolean) {

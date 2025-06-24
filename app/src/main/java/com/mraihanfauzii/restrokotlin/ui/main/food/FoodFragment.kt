@@ -4,13 +4,10 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.mraihanfauzii.restrokotlin.R
-import com.mraihanfauzii.restrokotlin.databinding.FragmentFoodBinding // Akan kita buat nanti
+import com.mraihanfauzii.restrokotlin.databinding.FragmentFoodBinding
 import com.mraihanfauzii.restrokotlin.ui.authentication.AuthenticationManager
 import com.mraihanfauzii.restrokotlin.viewmodel.FoodViewModel
 import java.text.SimpleDateFormat
@@ -40,7 +37,7 @@ class FoodFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         authenticationManager = AuthenticationManager(requireContext())
-        foodViewModel = ViewModelProvider(this)[FoodViewModel::class.java] // Scope fragment
+        foodViewModel = ViewModelProvider(this)[FoodViewModel::class.java]
 
         setupUI()
         observeViewModel()
@@ -48,9 +45,6 @@ class FoodFragment : Fragment() {
     }
 
     private fun setupUI() {
-        // Implementasi klik pada tiap bagian Pola Makan untuk menampilkan detail
-        // Anda mungkin ingin menavigasi ke detail atau menampilkan dialog/bottom sheet
-        // Untuk saat ini, kita akan hanya menampilkan Toast sederhana
         binding.llMakanPagi.setOnClickListener { showMealDetail("Makan Pagi", binding.tvMenuPagi.text.toString()) }
         binding.llMakanSiang.setOnClickListener { showMealDetail("Makan Siang", binding.tvMenuSiang.text.toString()) }
         binding.llMakanMalam.setOnClickListener { showMealDetail("Makan Malam", binding.tvMenuMalam.text.toString()) }
@@ -110,7 +104,6 @@ class FoodFragment : Fragment() {
 
     private fun showMealDetail(mealType: String, menu: String) {
         Toast.makeText(requireContext(), "$mealType: $menu", Toast.LENGTH_LONG).show()
-        // Anda bisa mengganti ini dengan BottomSheetDialogFragment atau navigasi ke detail Fragment
     }
 
     private fun showDatePicker() {

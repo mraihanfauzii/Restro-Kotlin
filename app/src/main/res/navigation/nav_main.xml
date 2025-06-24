@@ -21,47 +21,108 @@
     <fragment
         android:id="@+id/calendarFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.calendar.CalendarFragment"
-        android:label="fragment_discover"
-        tools:layout="@layout/fragment_calendar" />
+        android:label="fragment_calendar"
+        tools:layout="@layout/fragment_calendar">
+        <action
+            android:id="@+id/action_calendarFragment_to_programDetailBottomSheetFragment"
+            app:destination="@id/programDetailBottomSheetFragment" />
+        <action
+            android:id="@+id/action_calendarFragment_to_detectActivity"
+            app:destination="@id/detectActivity" />
+    </fragment>
+    <dialog
+        android:id="@+id/programDetailBottomSheetFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.calendar.ProgramDetailBottomSheetFragment"
+        android:label="Detail Program"
+        tools:layout="@layout/fragment_program_detail_bottom_sheet">
+        <argument
+            android:name="program_id_arg"
+            app:argType="integer" />
+    </dialog>
     <fragment
-        android:id="@+id/chatFragment"
-        android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.ChatFragment"
-        android:label="fragment_construction"
-        tools:layout="@layout/fragment_chat" />
+        android:id="@+id/chatListFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatListFragment"
+        android:label="fragment_chat"
+        tools:layout="@layout/fragment_chat_list">
+        <action
+            android:id="@+id/action_chatListFragment_to_chatDetailFragment"
+            app:destination="@id/chatDetailFragment" />
+        <action
+            android:id="@+id/action_chatListFragment_to_chatBotDetailFragment"
+            app:destination="@id/chatBotDetailFragment" />
+    </fragment>
+    <fragment
+    android:id="@+id/chatDetailFragment"
+    android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatDetailFragment"
+    android:label="ChatDetailFragment"
+    tools:layout="@layout/fragment_chat_detail">
+        <argument
+            android:name="THERAPIST_ID_KEY"
+            app:argType="string"
+            android:defaultValue="@null"
+            app:nullable="true"/>
+    </fragment>
     <fragment
         android:id="@+id/foodFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.food.FoodFragment"
-        android:label="fragment_profile"
+        android:label="fragment_food"
         tools:layout="@layout/fragment_food" />
     <fragment
         android:id="@+id/profileFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.ProfileFragment"
         android:label="fragment_profile"
         tools:layout="@layout/fragment_profile">
-
-    <action
-        android:id="@+id/action_profileFragment_to_accountInfoFragment"
-        app:destination="@id/accountInfoFragment"
-        app:enterAnim="@anim/slide_in_right"
-        app:exitAnim="@anim/slide_out_left"
-        app:popEnterAnim="@anim/slide_in_left"
-        app:popExitAnim="@anim/slide_out_right" />
-    <action
-        android:id="@+id/action_profileFragment_to_patientInfoFragment"
-        app:destination="@id/patientInfoFragment"
-        app:enterAnim="@anim/slide_in_right"
-        app:exitAnim="@anim/slide_out_left"
-        app:popEnterAnim="@anim/slide_in_left"
-        app:popExitAnim="@anim/slide_out_right" />
-    <action
-        android:id="@+id/action_profileFragment_to_healthInfoFragment"
-        app:destination="@id/healthInfoFragment"
-        app:enterAnim="@anim/slide_in_right"
-        app:exitAnim="@anim/slide_out_left"
-        app:popEnterAnim="@anim/slide_in_left"
-        app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profileFragment_to_gamificationFragment"
+            app:destination="@id/gamificationFragment" />
+        <action
+            android:id="@+id/action_profileFragment_to_accountInfoFragment"
+            app:destination="@id/accountInfoFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profileFragment_to_patientInfoFragment"
+            app:destination="@id/patientInfoFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_profileFragment_to_healthInfoFragment"
+            app:destination="@id/healthInfoFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
-
+    <activity
+        android:id="@+id/detectActivity"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.DetectActivity"
+        tools:layout="@layout/activity_detect">
+        <argument
+            android:name="plannedExercises"
+            app:argType="android.os.Bundle[]"
+            app:nullable="true" />
+        <argument
+            android:name="maxDurationPerRep"
+            app:argType="integer"
+            android:defaultValue="20" />
+        <argument
+            android:name="programName"
+            app:argType="string"
+            app:nullable="true" />
+        <argument
+            android:name="programId"
+            app:argType="integer"
+            android:defaultValue="-1" />
+    </activity>
+    <fragment
+        android:id="@+id/gamificationFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.GamificationFragment"
+        android:label="Gamifikasi"
+        tools:layout="@layout/fragment_gamification" />
     <fragment
         android:id="@+id/accountInfoFragment"
         android:name="com.mraihanfauzii.restrokotlin.ui.main.profile.AccountInfoFragment"
@@ -79,5 +140,10 @@
         android:name="com.mraihanfauzii.restrokotlin.ui.main.exercise.detect.DebugFragment"
         android:label="Debug Mode"
         tools:layout="@layout/fragment_debug" />
+    <fragment
+        android:id="@+id/chatBotDetailFragment"
+        android:name="com.mraihanfauzii.restrokotlin.ui.main.chat.ChatBotDetailFragment"
+        android:label="Gemini AI Chatbot"
+        tools:layout="@layout/fragment_chat_bot_detail" />
 
 </navigation>

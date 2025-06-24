@@ -10,7 +10,7 @@
         android:icon="@drawable/baseline_calendar_month_24"
         android:title="@string/calendar"/>
     <item
-        android:id="@+id/chatFragment"
+        android:id="@+id/chatListFragment"
         android:icon="@drawable/baseline_sports_gymnastics_24"
         android:title="@string/chat"/>
     <item

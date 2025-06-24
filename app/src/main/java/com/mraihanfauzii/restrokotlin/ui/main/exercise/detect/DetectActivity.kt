@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.Parcelable
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -102,7 +103,7 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
 
     /* ───── UI helper ───── */
     private val uiUpdateHandler = Handler(Looper.getMainLooper())
-    private lateinit var uiUpdateRunnable: Runnable
+    private var uiUpdateRunnable: Runnable? = null
 
     companion object { private const val TAG = "DetectActivity" }
 
@@ -115,35 +116,54 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
         binding = ActivityDetectBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        /* tombol ganti kamera */
-        binding.cameraSwitchButton.setOnClickListener { switchCamera() }
+        /* ---------- 1. Ambil data intent ---------- */
+        // Selalu kirim dari fragment sebagai ArrayList<Bundle>
+        val arrayList: ArrayList<Bundle>? =
+            intent.getParcelableArrayListExtra("plannedExercises")
 
-        /* data dari intent DebugActivity */
-        plannedExercises = intent.getParcelableArrayListExtra<Bundle>("plannedExercises")
-            ?.map { b ->
-                mapOf(
-                    "actionName" to (b.getString("actionName") ?: ""),
-                    "targetReps" to b.getInt("targetReps", 1)
-                )
-            } ?: emptyList()
+        val arrayAsList: List<Bundle>? =
+            intent.getParcelableArrayExtra("plannedExercises")
+                ?.map { it as Bundle }
+
+        val bundles: List<Bundle> = arrayList ?: arrayAsList ?: emptyList()
+
+        plannedExercises = bundles.map {
+            mapOf(
+                "actionName" to (it.getString("actionName") ?: ""),
+                "targetReps" to it.getInt("targetReps", 1)
+            )
+        }
+
         maxDurationPerRep = intent.getIntExtra("maxDurationPerRep", 20)
+        val programName    = intent.getStringExtra("programName") ?: "-"
+        val programId      = intent.getIntExtra("programId", -1)
 
-        /* eksekutor background */
+        Log.d(TAG, "plannedExercises = $plannedExercises")
+        Log.d(TAG, "maxDurationPerRep = $maxDurationPerRep, programName = $programName, programId = $programId")
+
+        if (plannedExercises.isEmpty()) {
+            Toast.makeText(this,
+                "Tidak ada gerakan yang direncanakan untuk deteksi.",
+                Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
+        /* ---------- 2. Setup eksekutor & UI ---------- */
         backgroundExecutor = Executors.newSingleThreadExecutor()
 
-        /* start kamera */
+        binding.cameraSwitchButton.setOnClickListener { switchCamera() }
         binding.viewFinder.post { setUpCamera() }
 
-        /* timer perbarui UI */
         uiUpdateRunnable = object : Runnable {
             override fun run() {
                 currentTime = System.currentTimeMillis()
                 updateUI()
                 uiUpdateHandler.postDelayed(this, 80)
             }
-        }
-        uiUpdateHandler.post(uiUpdateRunnable)
+        }.also { uiUpdateHandler.post(it) }
 
+        /* ---------- 3. Bootstrap pose-landmark & model ---------- */
         bootstrap()
     }
 
@@ -554,7 +574,9 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
 
     /* ═════════════ Sesi selesai ═════════════ */
     private fun finishSession() {
-        uiUpdateHandler.removeCallbacks(uiUpdateRunnable)
+        uiUpdateRunnable?.let { runnable ->
+            uiUpdateHandler.removeCallbacks(runnable) }
+
         Log.d(TAG, "Session finished")
 
         val totalOk  = sessionSummary.sumOf { it.completedReps }
@@ -585,9 +607,13 @@ class DetectActivity : AppCompatActivity(), PoseLandmarkerHelper.LandmarkerListe
     /* ────────── cleanup ────────── */
     override fun onDestroy() {
         super.onDestroy()
-        uiUpdateHandler.removeCallbacks(uiUpdateRunnable)
+        uiUpdateRunnable?.let {
+            runnable -> uiUpdateHandler.removeCallbacks(runnable)
+        }
 
-        backgroundExecutor.shutdown()
+        if (::backgroundExecutor.isInitialized) {
+            backgroundExecutor.shutdown()
+        }
         try { backgroundExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS) }
         catch (e: InterruptedException) { Log.e(TAG, "Executor shutdown interrupted", e) }
 

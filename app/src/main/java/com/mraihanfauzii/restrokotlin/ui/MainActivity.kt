@@ -27,7 +27,7 @@ class MainActivity : AppCompatActivity() {
             when (destination.id) {
                 R.id.homeFragment,
                 R.id.calendarFragment,
-                R.id.chatFragment,
+                R.id.chatListFragment,
                 R.id.foodFragment,
                 R.id.profileFragment -> {
                     if (binding.bottomNavigationView.isGone) {
